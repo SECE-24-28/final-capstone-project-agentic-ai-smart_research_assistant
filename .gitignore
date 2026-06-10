@@ -1,4 +1,4 @@
-__pycache__/
+﻿__pycache__/
 *.py[cod]
 *.db
 *.sqlite
@@ -9,3 +9,8 @@ frontend/dist/
 backend/uploads/
 backend/vectorstore/
 backend/models/
+backend/**/__pycache__/
+frontend/**/__pycache__/
+backend/**/__pycache__/
+chats/
+docs/
