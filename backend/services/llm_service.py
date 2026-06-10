@@ -1,7 +1,7 @@
 import logging
 from typing import List
 
-from .config import settings
+from ..config import settings
 
 try:
     from transformers import AutoTokenizer, AutoModelForCausalLM, pipeline

@@ -1,4 +1,5 @@
-from pydantic import BaseSettings
+# pyrefly: ignore [missing-import]
+from pydantic_settings import BaseSettings
 from pathlib import Path
 
 BASE_DIR = Path(__file__).resolve().parent

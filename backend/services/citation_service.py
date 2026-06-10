@@ -1,5 +1,5 @@
-from .database import SessionLocal
-from .models import Citation, Paper
+from ..database import SessionLocal
+from ..models import Citation, Paper
 
 class CitationService:
     def __init__(self):

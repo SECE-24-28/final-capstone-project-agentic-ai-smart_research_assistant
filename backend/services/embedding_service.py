@@ -1,5 +1,5 @@
 import logging
-from .config import settings
+from ..config import settings
 
 try:
     from sentence_transformers import SentenceTransformer

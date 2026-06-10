@@ -9,6 +9,7 @@ dependencies = [
     "uvicorn[standard]",
     "sqlalchemy",
     "pydantic",
+    "pydantic-settings",
     "python-multipart",
     "aiofiles",
     "sentence-transformers",

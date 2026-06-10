@@ -20,7 +20,6 @@ class Paper(Base):
 
     summaries = relationship("Summary", back_populates="paper")
     citations = relationship("Citation", back_populates="paper")
-    comparisons = relationship("Comparison", back_populates="paper")
     chat_history = relationship("ChatHistory", back_populates="paper")
     literature_reviews = relationship("LiteratureReview", back_populates="paper")
 

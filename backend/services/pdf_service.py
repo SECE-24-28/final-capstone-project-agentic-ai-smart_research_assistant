@@ -1,8 +1,8 @@
 import fitz
 from pathlib import Path
-from .config import settings
+from ..config import settings, UPLOAD_DIR
 
-UPLOAD_DIR = settings.UPLOAD_DIR
+UPLOAD_DIR = UPLOAD_DIR
 UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
 
 class PDFService:

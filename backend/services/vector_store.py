@@ -1,6 +1,6 @@
 import logging
 from pathlib import Path
-from .config import settings
+from ..config import settings, VECTOR_DIR
 
 try:
     import chromadb
@@ -16,7 +16,7 @@ class VectorStoreService:
         self.collection_name = settings.chroma_collection_name
         self.store = None
         self.collection = None
-        self.persist_directory = settings.VECTOR_DIR
+        self.persist_directory = VECTOR_DIR
 
     def initialize(self):
         if chromadb is None or ChromaSettings is None:
@@ -24,11 +24,11 @@ class VectorStoreService:
 
         self.persist_directory.mkdir(parents=True, exist_ok=True)
         logger.info("Initializing ChromaDB vector store at %s", self.persist_directory)
-        self.store = chromadb.Client(Settings(chroma_db_impl="duckdb+parquet", persist_directory=str(self.persist_directory)))
+        self.store = chromadb.PersistentClient(path=str(self.persist_directory))
         if self.collection_name in [c.name for c in self.store.list_collections()]:
             self.collection = self.store.get_collection(self.collection_name)
         else:
-            self.collection = self.store.create_collection(name=self.collection_name, metadata={})
+            self.collection = self.store.create_collection(name=self.collection_name)
 
     def add_documents(self, ids, texts, metadatas, embeddings):
         if self.collection is None:
