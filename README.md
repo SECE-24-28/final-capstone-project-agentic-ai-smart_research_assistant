@@ -1,36 +1,224 @@
 # IEEE Research Assistant — Multi-Agent AI
 
-A smart literature review assistant that automates the academic research pipeline using a multi-agent AI architecture. Built as a final year engineering mini project.
+> A locally-running, privacy-preserving AI research assistant that automates the literature review pipeline for students and researchers. Zero cloud APIs. Zero cost.
 
 ---
 
 ## What It Does
 
-Researchers and students spend 20–40 hours on a single literature review. This tool cuts that down to under 2 hours by automating every stage of the process:
+Literature reviews are slow, repetitive, and error-prone. This tool automates the entire pipeline:
 
-- **Search** IEEE papers by topic using the IEEE Xplore API
-- **Summarize** uploaded PDFs into structured summaries (problem, method, dataset, results, limitations)
-- **Compare** 2–5 papers side by side with a generated comparison table and narrative
-- **Identify Research Gaps** from cross-paper analysis
-- **Generate IEEE Citations** automatically from paper metadata
-- **Write a Literature Review Draft** synthesizing all findings
-- **Chat with Your Papers** using RAG — ask natural language questions grounded in actual PDF content
+- **Search** for research papers by keyword (CrossRef API)
+- **Upload PDFs** and process them with AI
+- **Summarize** papers into structured academic summaries
+- **Compare** multiple papers side-by-side
+- **Chat** with your uploaded papers using RAG
+- **Generate IEEE citations** automatically from paper metadata
+- **Identify research gaps** across a set of papers
+- **Generate literature reviews** from your collected papers
+
+Everything runs locally on your machine. No OpenAI. No Gemini. No Claude API. No subscriptions.
 
 ---
 
 ## Tech Stack
 
-| Layer | Technology |
+### Frontend
+| Technology | Purpose |
 |---|---|
-| Frontend | React 18, Tailwind CSS, Axios, React Query |
-| Backend | FastAPI, Python 3.11, Pydantic, Uvicorn |
-| AI / Agents | LangGraph, LangChain, OpenAI GPT-4o-mini |
-| Vector DB | ChromaDB (local) |
-| Embeddings | sentence-transformers (all-MiniLM-L6-v2) |
-| Relational DB | PostgreSQL 15 |
-| PDF Processing | PyMuPDF (fitz) |
-| ORM | SQLAlchemy + Alembic |
-| Containerization | Docker + Docker Compose |
+| React + Vite | UI framework and build tool |
+| Tailwind CSS | Utility-first styling |
+| React Query | Server state and caching |
+| Axios | HTTP client |
+
+### Backend
+| Technology | Purpose |
+|---|---|
+| FastAPI | REST API framework |
+| LangGraph | Multi-agent orchestration |
+| LangChain | RAG utilities and text splitting |
+| SQLAlchemy | ORM for SQLite |
+| Pydantic | Request/response validation |
+| PyMuPDF | PDF text extraction |
+
+### Local AI
+| Technology | Purpose |
+|---|---|
+| Qwen/Qwen2.5-1.5B-Instruct | Local LLM for text generation |
+| sentence-transformers/all-MiniLM-L6-v2 | Sentence embeddings |
+| ChromaDB | Local vector database |
+| Hugging Face Transformers | Model inference |
+
+### Infrastructure
+| Technology | Purpose |
+|---|---|
+| SQLite | Relational data storage |
+| UV | Python package manager |
+
+---
+
+## Architecture Overview
+
+The system uses a **Coordinator Agent** (via LangGraph) to route requests to specialized components:
+
+```
+User Request
+     |
+     v
+Coordinator Agent (LangGraph)
+     |
+     +---> Search Agent          (CrossRef API + SQLite)
+     +---> Summary Agent         (ChromaDB RAG + Qwen LLM)
+     +---> Comparison Agent      (SQLite summaries + Qwen LLM)
+     +---> Chat Agent            (ChromaDB RAG + Qwen LLM)
+     +---> Citation Service      (deterministic IEEE formatter)
+     +---> Research Gap Service  (LLM synthesis)
+     +---> Literature Review     (LLM generation)
+          Service
+```
+
+**Core Agents** use Retrieval Augmented Generation (RAG) — they retrieve relevant chunks from ChromaDB before calling the LLM, grounding all outputs in your actual documents.
+
+**Generation Services** (Citation, Gap, Review) either use deterministic formatting (Citation) or lightweight LLM calls over stored summaries.
+
+---
+
+## Hardware Requirements
+
+| Configuration | RAM | GPU | Inference Speed |
+|---|---|---|---|
+| Minimum | 8 GB | None (CPU only) | 30–60 sec / task |
+| Recommended | 12 GB | Any NVIDIA 4+ GB VRAM | 3–8 sec / task |
+| Optimal | 16 GB | NVIDIA 6+ GB VRAM | 2–5 sec / task |
+
+The model loads in `bfloat16` precision (~3.5 GB RAM). Optional 4-bit quantization is available for machines with only 8 GB RAM — enable it in `backend/config.py`.
+
+---
+
+## Prerequisites
+
+- Python 3.11 or higher
+- Node.js 18 or higher
+- [UV](https://docs.astral.sh/uv/) — Python package manager
+- Git
+- (Optional) NVIDIA GPU with CUDA 11.8+ for faster inference
+
+---
+
+## Installation
+
+### 1. Clone the Repository
+
+```bash
+git clone https://github.com/your-org/ieee-research-assistant.git
+cd ieee-research-assistant
+```
+
+### 2. Install Python Dependencies with UV
+
+UV manages all Python dependencies from the project root.
+
+```bash
+# Install UV if you don't have it
+curl -LsSf https://astral.sh/uv/install.sh | sh
+
+# Install all backend dependencies from the lockfile
+uv sync
+```
+
+### 3. Download the AI Models
+
+The models are downloaded automatically the first time the backend starts. To pre-download manually:
+
+```bash
+uv run python -c "
+from transformers import AutoModelForCausalLM, AutoTokenizer
+AutoTokenizer.from_pretrained('Qwen/Qwen2.5-1.5B-Instruct')
+AutoModelForCausalLM.from_pretrained('Qwen/Qwen2.5-1.5B-Instruct')
+"
+
+uv run python -c "
+from sentence_transformers import SentenceTransformer
+SentenceTransformer('sentence-transformers/all-MiniLM-L6-v2')
+"
+```
+
+> This requires an internet connection and approximately 3.5 GB of disk space. After download, the system runs fully offline.
+
+### 4. Install Frontend Dependencies
+
+```bash
+cd frontend
+npm install
+cd ..
+```
+
+---
+
+## Running the Application
+
+### Start the Backend
+
+```bash
+uv run uvicorn backend.main:app --reload --port 8000
+```
+
+The backend will:
+- Load the Qwen2.5-1.5B-Instruct model into memory (allow 15–30 seconds on first start)
+- Load the all-MiniLM-L6-v2 embedding model
+- Initialize the SQLite database at `backend/database/research_assistant.db`
+- Initialize ChromaDB at `backend/vectorstore/chroma_db/`
+
+API documentation is available at `http://localhost:8000/docs` once running.
+
+### Start the Frontend
+
+Open a second terminal:
+
+```bash
+cd frontend
+npm run dev
+```
+
+The application will be available at `http://localhost:5173`.
+
+---
+
+## Quick Start Workflow
+
+1. **Search** — Enter a keyword (e.g., "transformer attention NLP") to find papers. Results are stored in the current session.
+
+2. **Upload** — Upload one or more PDF papers. Each PDF is extracted, chunked, and embedded into ChromaDB automatically.
+
+3. **Summarize** — Click "Summarize" on any uploaded paper to generate a structured summary covering objective, methodology, findings, limitations, and contributions.
+
+4. **Cite** — Click "Generate Citation" on any paper to produce an IEEE-formatted citation string.
+
+5. **Compare** — Select two or more papers and click "Compare" for a structured side-by-side analysis.
+
+6. **Chat** — Open the Chat interface, select a paper (or all papers), and ask any natural-language question. Answers are grounded in the document text with source references.
+
+7. **Gap Analysis** — Select three or more papers and run "Research Gaps" to identify unexplored directions in the field.
+
+8. **Literature Review** — Select all relevant papers and run "Generate Review" to produce a structured academic literature review section.
+
+---
+
+## Configuration
+
+Key settings are in `backend/config.py`:
+
+| Setting | Default | Description |
+|---|---|---|
+| `LLM_MODEL_ID` | `Qwen/Qwen2.5-1.5B-Instruct` | Hugging Face model ID |
+| `EMBEDDING_MODEL_ID` | `sentence-transformers/all-MiniLM-L6-v2` | Embedding model |
+| `USE_4BIT_QUANTIZATION` | `False` | Enable for 8 GB RAM machines |
+| `MAX_CHUNK_SIZE` | `500` | Token size per text chunk |
+| `CHUNK_OVERLAP` | `50` | Overlap tokens between chunks |
+| `TOP_K_CHUNKS` | `5` | Retrieved chunks per RAG query |
+| `DB_PATH` | `backend/database/research_assistant.db` | SQLite database path |
+| `UPLOAD_DIR` | `backend/uploads/` | PDF storage directory |
+| `CHROMA_DIR` | `backend/vectorstore/chroma_db/` | ChromaDB storage path |
 
 ---
 
@@ -38,327 +226,138 @@ Researchers and students spend 20–40 hours on a single literature review. This
 
 ```
 ieee-research-assistant/
-├── frontend/                  # React application
-│   ├── src/
-│   │   ├── components/        # Reusable UI components
-│   │   ├── pages/             # SearchPage, SummarizePage, ComparePage, ReviewPage, ChatPage
-│   │   ├── api/               # Axios API client wrappers
-│   │   ├── App.jsx
-│   │   └── main.jsx
-│   ├── package.json
-│   └── tailwind.config.js
-│
-├── backend/
-│   ├── api/                   # FastAPI route handlers
-│   ├── agents/                # One file per agent + prompts/
-│   │   ├── coordinator.py     # LangGraph StateGraph
-│   │   ├── search_agent.py
-│   │   ├── summarization_agent.py
-│   │   ├── comparison_agent.py
-│   │   ├── gap_agent.py
-│   │   ├── citation_agent.py
-│   │   ├── review_agent.py
-│   │   ├── chat_agent.py
-│   │   └── prompts/
-│   ├── services/              # PDF processing, IEEE API client, embeddings
-│   ├── database/              # SQLAlchemy models, CRUD, migrations
-│   ├── vectorstore/           # ChromaDB client and retriever
-│   ├── uploads/               # Uploaded PDFs (gitignored)
-│   ├── main.py                # FastAPI entry point
-│   ├── config.py              # Environment config
-│   └── requirements.txt
-│
-├── docs/
-│   └── architecture.md        # Full architecture document
-│
-├── docker-compose.yml         # PostgreSQL container
-├── .env.example
-└── README.md
+|
++-- pyproject.toml          # UV project config + all Python dependencies
++-- uv.lock                 # UV lockfile (deterministic installs)
++-- README.md               # This file
+|
++-- frontend/               # React + Vite application
+|   +-- src/
+|   |   +-- components/     # Reusable UI components
+|   |   +-- pages/          # Route-level page components
+|   |   +-- hooks/          # React Query data hooks
+|   |   +-- api/            # Axios client config
+|   +-- package.json
+|
++-- backend/                # FastAPI application
+|   +-- main.py             # App entry point
+|   +-- config.py           # Configuration constants
+|   +-- routers/            # FastAPI route handlers
+|   +-- agents/             # LangGraph core agents
+|   +-- services/           # Generation services + LLM/embedding singletons
+|   +-- database/           # SQLAlchemy models + SQLite
+|   +-- vectorstore/        # ChromaDB client + storage
+|   +-- schemas/            # Pydantic request/response models
+|   +-- uploads/            # Uploaded PDF files
+|
++-- docs/
+    +-- architecture.md     # Full system architecture document
+    +-- api_reference.md    # API endpoint reference
+    +-- setup_guide.md      # Detailed setup instructions
 ```
 
 ---
 
-## Prerequisites
+## API Endpoints
 
-Make sure the following are installed on your machine before proceeding:
-
-- [Node.js](https://nodejs.org/) v18 or higher
-- [Python](https://www.python.org/) 3.11 or higher
-- [Docker Desktop](https://www.docker.com/products/docker-desktop/) (for PostgreSQL)
-- [Git](https://git-scm.com/)
-
----
-
-## Getting Started
-
-### 1. Clone the Repository
-
-```bash
-git clone https://github.com/your-username/ieee-research-assistant.git
-cd ieee-research-assistant
-```
-
-### 2. Set Up Environment Variables
-
-```bash
-cp .env.example .env
-```
-
-Open `.env` and fill in the required values:
-
-```env
-# LLM Provider — get from https://platform.openai.com/api-keys
-OPENAI_API_KEY=sk-...
-
-# Gemini fallback — get from https://aistudio.google.com/app/apikey
-GEMINI_API_KEY=AI...
-
-# IEEE Xplore API — get from https://developer.ieee.org
-IEEE_API_KEY=...
-
-# Database
-DATABASE_URL=postgresql://postgres:postgres@localhost:5432/ieee_research_db
-
-# Set to true to use mock paper data instead of real IEEE API
-USE_MOCK=false
-
-# File upload directory
-UPLOAD_DIR=./uploads
-```
-
-> **Note:** If you don't have an IEEE API key yet, set `USE_MOCK=true` to use the included sample paper dataset during development.
-
-### 3. Start PostgreSQL
-
-```bash
-docker-compose up -d
-```
-
-This starts a PostgreSQL 15 container on port 5432 with the default credentials. Verify it's running:
-
-```bash
-docker ps
-```
-
-### 4. Set Up the Backend
-
-```bash
-cd backend
-python -m venv venv
-
-# On macOS/Linux
-source venv/bin/activate
-
-# On Windows
-venv\Scripts\activate
-
-pip install -r requirements.txt
-```
-
-Run database migrations:
-
-```bash
-alembic upgrade head
-```
-
-Start the FastAPI server:
-
-```bash
-uvicorn main:app --reload --port 8000
-```
-
-The backend is now running at `http://localhost:8000`.
-API docs are available at `http://localhost:8000/docs`.
-
-### 5. Set Up the Frontend
-
-Open a new terminal:
-
-```bash
-cd frontend
-npm install
-npm run dev
-```
-
-The frontend is now running at `http://localhost:3000`.
-
----
-
-## Usage Guide
-
-### Step 1 — Search for Papers
-
-Go to the **Search** tab. Enter your research topic (e.g., `"transformer models for medical image segmentation"`) and click Search. Select the papers you want to work with.
-
-### Step 2 — Upload PDFs
-
-For any selected paper, upload its PDF using the upload button on the paper card. Text is automatically extracted and stored for RAG.
-
-### Step 3 — Summarize
-
-Go to the **Summarize** tab. Click "Summarize All" or summarize individual papers. Each paper gets a structured breakdown: problem, method, dataset, results, limitations, future work.
-
-### Step 4 — Compare
-
-Go to the **Compare** tab. Select 2 or more papers and click Compare. A comparison table and narrative are generated.
-
-### Step 5 — Generate Literature Review
-
-Go to the **Review** tab. Click "Generate Review". The system synthesizes all summaries, comparisons, and gap findings into a 600–1000 word draft. The draft is editable directly in the browser.
-
-### Step 6 — Chat with Your Papers
-
-Go to the **Chat** tab. Ask any question about your uploaded papers in natural language. Answers are grounded in actual PDF content with source references.
-
----
-
-## API Reference
-
-All endpoints are documented interactively at `http://localhost:8000/docs` when the backend is running.
+All endpoints are prefixed with `/api`. Interactive docs at `http://localhost:8000/docs`.
 
 | Method | Endpoint | Description |
 |---|---|---|
-| POST | `/api/search` | Search IEEE papers by topic |
-| POST | `/api/upload-pdf` | Upload and extract text from a PDF |
-| POST | `/api/summarize` | Generate structured summary for a paper |
-| POST | `/api/compare` | Compare 2 or more papers |
-| POST | `/api/gap` | Identify research gaps from session papers |
-| POST | `/api/cite` | Generate IEEE citation for a paper |
-| POST | `/api/review` | Generate literature review draft |
-| POST | `/api/chat` | RAG-powered Q&A with uploaded papers |
-| GET | `/api/session/{id}/report` | Get full compiled session report |
+| POST | `/api/search` | Search for papers by keyword |
+| POST | `/api/upload` | Upload and process a PDF |
+| POST | `/api/agent/summarize` | Generate a structured paper summary |
+| POST | `/api/agent/compare` | Compare multiple papers |
+| POST | `/api/agent/cite` | Generate an IEEE citation |
+| POST | `/api/agent/gaps` | Generate research gap analysis |
+| POST | `/api/agent/review` | Generate a literature review |
+| POST | `/api/chat` | Ask a question about uploaded papers |
+| GET | `/api/report/{session_id}` | Get all outputs for a session |
 
 ---
 
-## Multi-Agent Architecture
+## Why Local AI?
 
-```
-User
- |
- v
-Coordinator Agent (LangGraph)
- |
- +---> Search Agent          — IEEE Xplore API queries
- |
- +---> Summarization Agent   — LLM-powered structured summaries
- |
- +---> Comparison Agent      — Cross-paper comparison tables
- |
- +---> Research Gap Agent    — Gap identification from synthesis
- |
- +---> Citation Agent        — IEEE citation formatting
- |
- +---> Literature Review Agent — Full review draft generation
- |
- +---> AI Chat Agent         — RAG over uploaded PDFs
- |
- v
-Final Report
-```
+This project uses local models instead of cloud APIs for principled reasons:
 
-Each agent has a single focused responsibility. The Coordinator manages state and routes outputs between agents using LangGraph's `StateGraph`.
+- **Zero cost** — No per-token charges, no subscriptions, no surprises.
+- **Offline capable** — Works without internet after the initial model download.
+- **Data privacy** — Your research papers and questions never leave your machine.
+- **No vendor lock-in** — Swap models by changing a single config value.
+- **Academic reproducibility** — No dependency on external API availability or versioning.
+
+The tradeoff is inference speed and output quality compared to large cloud models. The RAG architecture compensates by grounding all outputs in your actual documents rather than relying solely on the model's parametric knowledge.
 
 ---
 
-## RAG Pipeline
+## Known Limitations
 
-```
-PDF Upload
-  → PyMuPDF text extraction
-  → RecursiveCharacterTextSplitter (500 tokens, 50 overlap)
-  → all-MiniLM-L6-v2 embeddings (local, no API cost)
-  → ChromaDB vector storage (per-session collections)
-
-At query time:
-  User question → embed → ChromaDB similarity search → top 5 chunks
-  → GPT-4o-mini with grounding prompt → answer + source references
-```
+- **Scanned PDFs are not supported.** Only text-based PDFs (e.g., from arXiv or IEEE Xplore) work with the current pipeline. Scanned image PDFs will return an extraction error.
+- **Inference is slow on CPU.** Without a GPU, each LLM task takes 30–60 seconds. This is expected behavior for local 1.5B model inference.
+- **Output quality is limited by model size.** The 1.5B model produces good structured outputs for focused tasks but may produce shallow results for complex multi-document synthesis. Treat all generated text as a draft requiring human review.
+- **Single-user design.** The MVP has no authentication or concurrent session isolation. It is designed for individual local use.
 
 ---
 
 ## Running Tests
 
 ```bash
-cd backend
-pytest tests/ -v
+# Run all tests
+uv run pytest
+
+# Run with verbose output
+uv run pytest -v
+
+# Run a specific test file
+uv run pytest backend/tests/test_citation_service.py
 ```
-
-Tests cover:
-- Agent output parsing (unit tests with mocked LLM responses)
-- PDF text extraction with sample files
-- Citation formatting against known inputs
-- Database CRUD operations
-- RAG retrieval recall (10 known Q&A pairs)
-
----
-
-## Environment Variables Reference
-
-| Variable | Required | Description |
-|---|---|---|
-| `OPENAI_API_KEY` | Yes | OpenAI API key for LLM calls |
-| `GEMINI_API_KEY` | No | Gemini Flash fallback key |
-| `IEEE_API_KEY` | No* | IEEE Xplore API key |
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `USE_MOCK` | No | `true` to use mock paper data (default: `false`) |
-| `UPLOAD_DIR` | No | PDF upload directory (default: `./uploads`) |
-| `CHROMA_PERSIST_DIR` | No | ChromaDB storage path (default: `./vectorstore/chroma`) |
-
-*If `USE_MOCK=true`, IEEE API key is not required.
-
----
-
-## Known Limitations (MVP)
-
-- Scanned PDFs (image-based) are not supported — text extraction requires text-based PDFs.
-- The comparison feature supports a maximum of 5 papers at once.
-- No user authentication — all sessions are anonymous in the MVP.
-- IEEE Xplore API only returns paper metadata, not full text. Full PDFs must be uploaded manually.
-- ChromaDB runs locally — not suitable for concurrent multi-user production deployment.
-
----
-
-## Future Enhancements
-
-- [ ] arXiv and Semantic Scholar integration
-- [ ] Trend Analysis Agent (year-over-year methodology shifts)
-- [ ] Paper Recommendation Agent (semantic similarity)
-- [ ] Multi-modal understanding of paper figures and tables
-- [ ] LaTeX export with BibTeX citations
-- [ ] Research roadmap generation
-- [ ] User accounts and persistent session history
-- [ ] Multi-document deep reasoning across 15+ papers
 
 ---
 
 ## Contributing
 
-This is a final year mini project. External contributions are welcome after the academic submission.
+This is an engineering mini project. If you wish to extend it:
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/your-feature`)
-3. Commit your changes (`git commit -m "Add your feature"`)
-4. Push to the branch (`git push origin feature/your-feature`)
-5. Open a Pull Request
+1. Fork the repository.
+2. Create a feature branch: `git checkout -b feature/your-feature-name`
+3. Install dependencies: `uv sync`
+4. Make your changes and add tests.
+5. Run the test suite: `uv run pytest`
+6. Open a pull request with a clear description of your changes.
+
+See `docs/architecture.md` for the full system design before making structural changes.
 
 ---
 
-## Team
+## Documentation
 
-Built by a 2-person team as a Final Year Engineering Mini Project at Sri Eshwar College of Engineering (B.E. Computer Science & Engineering, Batch 2024–2028).
+| Document | Location | Description |
+|---|---|---|
+| Architecture Spec | `docs/architecture.md` | Complete system design (26 sections) |
+| API Reference | `docs/api_reference.md` | All endpoint request/response schemas |
+| Setup Guide | `docs/setup_guide.md` | Detailed installation walkthrough |
 
 ---
 
 ## License
 
-This project is licensed under the MIT License. See [LICENSE](LICENSE) for details.
+This project is built for academic use. All dependencies are open-source:
+
+- Qwen/Qwen2.5-1.5B-Instruct — Apache 2.0
+- Hugging Face Transformers — Apache 2.0
+- sentence-transformers — Apache 2.0
+- ChromaDB — Apache 2.0
+- FastAPI, LangGraph, LangChain — MIT
+- React, Vite, Tailwind CSS — MIT
+- SQLite — Public Domain
+- UV — MIT
 
 ---
 
-## Acknowledgements
+## Team
 
-- [IEEE Xplore Developer Portal](https://developer.ieee.org) for the metadata API
-- [LangChain](https://langchain.com) and [LangGraph](https://langchain-ai.github.io/langgraph/) for the agent framework
-- [ChromaDB](https://www.trychroma.com/) for local vector storage
-- [sentence-transformers](https://www.sbert.net/) for free local embeddings
-- [PyMuPDF](https://pymupdf.readthedocs.io/) for PDF text extraction
+Built as an Engineering Mini Project by a 2-developer team in 7 days.
+
+---
+
+*For architecture details, see [`docs/architecture.md`](docs/architecture.md).*
