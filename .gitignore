@@ -1,4 +1,4 @@
-﻿__pycache__/
+__pycache__/
 *.py[cod]
 *.db
 *.sqlite
@@ -15,3 +15,14 @@ backend/**/__pycache__/
 chats/
 docs/
 .venv/
+
+# Tests and diagnostics
+tests/
+*test*.py
+qwen_*.py
+ml_diagnostics.py
+profile_e2e.py
+validation.py
+
+# PDFs
+*.pdf

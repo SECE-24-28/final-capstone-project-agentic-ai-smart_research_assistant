@@ -10,6 +10,10 @@ class PaperBase(BaseModel):
     journal: Optional[str] = None
     source: Optional[str] = None
 
+class SearchTopicRequest(BaseModel):
+    topic: str
+    limit: Optional[int] = 5
+
 class PaperCreate(PaperBase):
     pass
 

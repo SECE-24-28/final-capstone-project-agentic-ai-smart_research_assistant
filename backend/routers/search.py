@@ -27,3 +27,12 @@ def create_paper(paper: PaperCreate, db: Session = Depends(get_db)):
 def list_papers(db: Session = Depends(get_db)):
     agent = SearchAgent(db)
     return agent.get_papers()
+
+@router.post("/topic", response_model=list[PaperResponse])
+def search_topic(request: __import__('backend.schemas').schemas.SearchTopicRequest, db: Session = Depends(get_db)):
+    agent = SearchAgent(db)
+    try:
+        papers = agent.search_and_store(request.topic, limit=request.limit)
+        return papers
+    except Exception as exc:
+        raise HTTPException(status_code=500, detail=str(exc))
