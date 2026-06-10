@@ -21,6 +21,16 @@ Everything runs locally on your machine. No OpenAI. No Gemini. No Claude API. No
 
 ---
 
+## Repository Layout
+
+- `backend/` — FastAPI backend, database models, service layer, agent orchestration.
+- `frontend/` — React + Vite starter UI and browser client.
+- `main.py` — root launch entrypoint for the backend.
+- `pyproject.toml` — Python dependency manifest.
+- `IEEE_Research_Assistant_Architecture.md` — architecture and design specification.
+
+---
+
 ## Tech Stack
 
 ### Frontend

@@ -1,5 +1,10 @@
+import uvicorn
+
+from backend.main import app
+
+
 def main():
-    print("Hello from final-capstone-project-agentic-ai-smart-research-assistant!")
+    uvicorn.run(app, host="0.0.0.0", port=8000, reload=True)
 
 
 if __name__ == "__main__":
