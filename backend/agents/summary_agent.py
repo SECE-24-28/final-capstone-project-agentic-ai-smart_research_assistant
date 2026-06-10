@@ -13,26 +13,31 @@ class SummaryAgent:
         if not paper:
             raise ValueError("Paper not found")
 
-        query = f"Summarize this academic paper and provide objective, methodology, findings, limitations, contributions. Paper title: {paper.title}." 
+        query = f"Summarize this academic paper. Paper title: {paper.title}." 
         if paper.abstract:
             query += f" Abstract: {paper.abstract}"
 
         top_chunks = []
         if vector_store.collection is not None:
+            # We want to retrieve relevant chunks based on a general summary intent
             embeddings = embedding_service.embed_texts([query])
             results = vector_store.query(embeddings, n_results=5, where={"paper_id": paper.id})
             for item in results.get("documents", [[]])[0]:
                 top_chunks.append(item)
 
         prompt = self.build_prompt(query, top_chunks)
-        result_text = llm_service.generate(prompt, max_tokens=512)
+        result_text = llm_service.generate(prompt, max_tokens=1024)
+        
+        # Parse the structured response
+        parsed = self.parse_summary(result_text)
+        
         summary = Summary(
             paper_id=paper.id,
-            objective="",
-            methodology="",
-            findings="",
-            limitations="",
-            contributions="",
+            objective=parsed.get("Objective", ""),
+            methodology=parsed.get("Methodology", ""),
+            findings=parsed.get("Findings", ""),
+            limitations=parsed.get("Limitations", ""),
+            contributions=parsed.get("Contributions", ""),
             raw_text=result_text,
         )
         self.session.add(summary)
@@ -41,11 +46,46 @@ class SummaryAgent:
         return summary
 
     def build_prompt(self, query: str, chunks: list[str]) -> str:
-        pieces = ["You are an academic summarizer.", query]
+        pieces = [
+            "You are an expert academic summarizer.", 
+            query,
+            "Based on the provided document passages, generate a detailed summary."
+        ]
         if chunks:
-            pieces.append("Use the following extracted document passages to ground your summary:")
+            pieces.append("\n--- SOURCE PASSAGES ---")
             pieces.extend(chunks)
-        pieces.append("Return a structured summary with objective, methodology, findings, limitations, and contributions.")
-        return "\n\n".join(pieces)
+            pieces.append("-----------------------\n")
+            
+        pieces.append(
+            "You MUST format your response using EXACTLY these markdown headers:\n"
+            "## Objective\n"
+            "## Methodology\n"
+            "## Findings\n"
+            "## Limitations\n"
+            "## Contributions\n"
+            "Do not use any other formatting. Put the relevant content under each header."
+        )
+        return "\n".join(pieces)
+
+    def parse_summary(self, text: str) -> dict:
+        sections = {"Objective": "", "Methodology": "", "Findings": "", "Limitations": "", "Contributions": ""}
+        current_section = None
+        
+        for line in text.split('\n'):
+            line_stripped = line.strip()
+            if line_stripped.startswith("## "):
+                header = line_stripped.replace("## ", "").strip()
+                if header in sections:
+                    current_section = header
+                    continue
+            
+            if current_section:
+                sections[current_section] += line + "\n"
+                
+        # Clean up whitespace
+        for k in sections:
+            sections[k] = sections[k].strip()
+            
+        return sections
 
 summary_agent_class = SummaryAgent

@@ -47,7 +47,7 @@ class LLMService:
         logger.info(f"COMPLETE: Model loaded successfully in {load_duration:.2f} seconds.")
         self._is_loaded = True
 
-    def generate(self, prompt: str, max_tokens: int = 256) -> str:
+    def generate(self, prompt: str, max_tokens: int = 256, system_prompt: str = "You are a helpful research assistant.") -> str:
         if not self._is_loaded:
             self.load()
             
@@ -55,7 +55,7 @@ class LLMService:
         gen_start = time.time()
         
         messages = [
-            {"role": "system", "content": "You are a helpful research assistant."},
+            {"role": "system", "content": system_prompt},
             {"role": "user", "content": prompt}
         ]
         
