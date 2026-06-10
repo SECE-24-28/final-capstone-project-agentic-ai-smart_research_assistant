@@ -110,8 +110,8 @@ The model loads in `bfloat16` precision (~3.5 GB RAM). Optional 4-bit quantizati
 ### 1. Clone the Repository
 
 ```bash
-git clone https://github.com/your-org/ieee-research-assistant.git
-cd ieee-research-assistant
+git clone https://github.com/SECE-24-28/final-capstone-project-agentic-ai-smart_research_assistant
+cd final-capstone-project-agentic-ai-smart_research_assistant
 ```
 
 ### 2. Install Python Dependencies with UV
@@ -354,10 +354,3 @@ This project is built for academic use. All dependencies are open-source:
 
 ---
 
-## Team
-
-Built as an Engineering Mini Project by a 2-developer team in 7 days.
-
----
-
-*For architecture details, see [`docs/architecture.md`](docs/architecture.md).*
