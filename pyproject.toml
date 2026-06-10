@@ -3,7 +3,7 @@ name = "final-capstone-project-agentic-ai-smart-research-assistant"
 version = "0.1.0"
 description = "Locally-hosted IEEE research assistant using multi-agent AI and RAG"
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.11"
 dependencies = [
     "fastapi",
     "uvicorn[standard]",
@@ -16,5 +16,6 @@ dependencies = [
     "chromadb",
     "transformers",
     "PyMuPDF",
-    "requests"
+    "requests",
+    "psutil>=7.2.2",
 ]
