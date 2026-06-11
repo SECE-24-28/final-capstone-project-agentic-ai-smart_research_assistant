@@ -6,61 +6,165 @@
   :root {
     /* Light Mode Basics */
     --bg-page: #FFFFFF;
-    --bg-sidebar: #F8F8F8;
+    --bg-sidebar: #FAFAFA;
     --bg-card: #FFFFFF;
     --text-primary: #111111;
     --text-secondary: #6B7280;
     --border-color: #E5E7EB;
+    --glow-opacity: 0.10;
 
     /* Default Agent Colors (Search) */
-    --agent-primary: #E11D48;
-    --agent-secondary: #22C55E;
+    --agent-primary: #E11D48; /* Raspberry */
+    --agent-secondary: #22C55E; /* Green */
   }
 
   .dark {
     /* Dark Mode Basics */
     --bg-page: #0A0A0A;
-    --bg-sidebar: #111111;
+    --bg-sidebar: #0F0F0F;
     --bg-card: #161616;
     --text-primary: #FFFFFF;
     --text-secondary: #9CA3AF;
     --border-color: #27272A;
+    --glow-opacity: 0.15;
   }
 }
 
-/* Agent Color System */
+/* Agent Color System & Glow Positions */
 [data-agent="search"] {
-  --agent-primary: #E11D48;
-  --agent-secondary: #22C55E;
+  --agent-primary: #E11D48; /* Raspberry */
+  --agent-secondary: #22C55E; /* Green */
+  --glow-pos-1-x: -10%; --glow-pos-1-y: -10%;
+  --glow-pos-2-x: 110%; --glow-pos-2-y: 110%;
 }
 
 [data-agent="summary"] {
-  --agent-primary: #14B8A6;
-  --agent-secondary: #EC4899;
+  --agent-primary: #14B8A6; /* Teal */
+  --agent-secondary: #EC4899; /* Pink */
+  --glow-pos-1-x: -10%; --glow-pos-1-y: 50%;
+  --glow-pos-2-x: 110%; --glow-pos-2-y: 110%;
 }
 
 [data-agent="chat"] {
-  --agent-primary: #64748B;
-  --agent-secondary: #F97316;
+  --agent-primary: #64748B; /* Blue Gray */
+  --agent-secondary: #F97316; /* Orange */
+  --glow-pos-1-x: -10%; --glow-pos-1-y: 50%;
+  --glow-pos-2-x: 110%; --glow-pos-2-y: 50%;
 }
 
 [data-agent="comparison"] {
-  --agent-primary: #6B8E23;
-  --agent-secondary: #FDBA74;
+  --agent-primary: #6B8E23; /* Olive Green */
+  --agent-secondary: #FDBA74; /* Light Orange */
+  --glow-pos-1-x: 110%; --glow-pos-1-y: -10%;
+  --glow-pos-2-x: -10%; --glow-pos-2-y: 110%;
 }
 
 [data-agent="gap"] {
-  --agent-primary: #7C3AED;
-  --agent-secondary: #06B6D4;
+  --agent-primary: #7C3AED; /* Purple */
+  --agent-secondary: #06B6D4; /* Cyan */
+  --glow-pos-1-x: -10%; --glow-pos-1-y: -10%;
+  --glow-pos-2-x: 110%; --glow-pos-2-y: 110%;
 }
 
 [data-agent="review"] {
-  --agent-primary: #1E3A8A;
-  --agent-secondary: #FBBF24;
+  --agent-primary: #4F46E5; /* Indigo */
+  --agent-secondary: #F43F5E; /* Rose */
+  --glow-pos-1-x: 110%; --glow-pos-1-y: -10%;
+  --glow-pos-2-x: -10%; --glow-pos-2-y: 110%;
+}
+
+[data-agent="auto"] {
+  --agent-primary: #6366F1; /* Indigo */
+  --agent-secondary: #A855F7; /* Purple */
+  --glow-pos-1-x: 50%; --glow-pos-1-y: -10%;
+  --glow-pos-2-x: 50%; --glow-pos-2-y: 110%;
 }
 
 body {
   @apply bg-[var(--bg-page)] text-[var(--text-primary)] font-sans antialiased transition-colors duration-200;
+}
+
+/* Premium Soft Ambient Glow (Light Mode Only) */
+.agent-bg-blob-primary,
+.agent-bg-blob-secondary {
+  position: fixed;
+  width: 700px;
+  height: 700px;
+  border-radius: 9999px;
+  filter: blur(140px);
+  pointer-events: none;
+  z-index: 0;
+  opacity: var(--glow-opacity);
+  transform: translate(-50%, -50%);
+  transition: all 1s ease-in-out;
+}
+
+.agent-bg-blob-primary {
+  background: var(--agent-primary);
+  left: var(--glow-pos-1-x);
+  top: var(--glow-pos-1-y);
+}
+
+.agent-bg-blob-secondary {
+  background: var(--agent-secondary);
+  left: var(--glow-pos-2-x);
+  top: var(--glow-pos-2-y);
+}
+
+.dark .agent-bg-blob-primary,
+.dark .agent-bg-blob-secondary,
+[data-theme="dark"] .agent-bg-blob-primary,
+[data-theme="dark"] .agent-bg-blob-secondary {
+  display: none !important;
+}
+
+/* Agent Gradient Utilities */
+.agent-gradient-bg {
+  background: linear-gradient(135deg, var(--agent-primary), var(--agent-secondary));
+}
+
+@keyframes gradient-pan {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+.agent-gradient-animate {
+  background: linear-gradient(135deg, var(--agent-primary), var(--agent-secondary), var(--agent-primary));
+  background-size: 200% 200%;
+  animation: gradient-pan 3s ease infinite;
+}
+
+/* Premium Soft Input Glow */
+.agent-glow {
+  box-shadow: 0 0 30px color-mix(in srgb, var(--agent-primary) 10%, transparent), 
+              0 0 10px color-mix(in srgb, var(--agent-secondary) 5%, transparent);
+  transition: box-shadow 0.3s ease-in-out;
+}
+
+.dark .agent-glow {
+  box-shadow: 0 0 35px color-mix(in srgb, var(--agent-primary) 20%, transparent),
+              0 0 15px color-mix(in srgb, var(--agent-secondary) 10%, transparent);
+}
+
+.agent-gradient-text {
+  background: linear-gradient(135deg, var(--agent-primary), var(--agent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Gradient Border for 1px (requires wrapper padding) */
+.agent-gradient-border-wrapper {
+  background: linear-gradient(90deg, var(--agent-primary), var(--agent-secondary));
+  padding: 1px;
+}
+
+/* Left Border Gradient for Sidebar items */
+.agent-left-border {
+  border-left: 2px solid transparent;
+  border-image: linear-gradient(to bottom, var(--agent-primary), var(--agent-secondary)) 1;
 }
 
 /* Markdown styling inside assistant messages */
@@ -97,3 +201,23 @@ body {
 .markdown-body th {
   @apply bg-[var(--bg-sidebar)];
 }
+
+/* ─── Streaming cursor ─────────────────────────────────────────── */
+@keyframes blink-cursor {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0; }
+}
+
+/* The ▌ character appended to streaming text blinks naturally because
+   ReactMarkdown re-renders on every token, which resets the animation.
+   This rule provides a fallback blink for any explicit cursor element. */
+.streaming-cursor {
+  display: inline-block;
+  width: 2px;
+  height: 1.1em;
+  background: var(--agent-primary);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: blink-cursor 0.8s step-end infinite;
+}
+

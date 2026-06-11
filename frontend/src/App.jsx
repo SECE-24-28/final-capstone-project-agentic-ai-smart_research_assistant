@@ -1,6 +1,7 @@
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AgentProvider } from './contexts/AgentContext';
+import { PaperProvider } from './contexts/PaperContext';
 
 import MainLayout from './components/layout/MainLayout';
 import ChatPage from './pages/ChatPage';
@@ -13,7 +14,8 @@ function App() {
   return (
     <ThemeProvider>
       <AgentProvider>
-        <Router>
+        <PaperProvider>
+          <Router>
           <Routes>
             <Route path="/" element={<MainLayout />}>
               <Route index element={<ChatPage />} />
@@ -24,6 +26,7 @@ function App() {
             </Route>
           </Routes>
         </Router>
+        </PaperProvider>
       </AgentProvider>
     </ThemeProvider>
   );

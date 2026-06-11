@@ -6,12 +6,24 @@ export default function WelcomeSection({ onSuggestionClick }) {
 
   const getGreeting = () => {
     switch (selectedAgentId) {
-      case 'search': return "Find research papers and academic publications.";
-      case 'summary': return "Summarize research into key insights.";
-      case 'comparison': return "Compare methodologies and findings.";
-      case 'gap': return "Discover unexplored research opportunities.";
-      case 'review': return "Generate academic literature reviews.";
-      default: return "How can I help you with your research today?";
+      case 'search': return (
+        <>Find <span className="agent-gradient-text">Research Papers</span> and Academic Publications</>
+      );
+      case 'summary': return (
+        <>Summarize Research into <span className="agent-gradient-text">Key Insights</span></>
+      );
+      case 'comparison': return (
+        <>Compare <span className="agent-gradient-text">Methodologies and Findings</span></>
+      );
+      case 'gap': return (
+        <>Discover Unexplored <span className="agent-gradient-text">Research Opportunities</span></>
+      );
+      case 'review': return (
+        <>Generate Academic <span className="agent-gradient-text">Literature Reviews</span></>
+      );
+      default: return (
+        <>How can I help with your <span className="agent-gradient-text">Research</span> today?</>
+      );
     }
   };
 
@@ -53,17 +65,19 @@ export default function WelcomeSection({ onSuggestionClick }) {
   const suggestions = getSuggestions();
 
   return (
-    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4">
+    <div className="flex flex-col items-center justify-center min-h-[50vh] text-center px-4 relative z-10">
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="mb-8"
+        className="mb-8 relative"
       >
-        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-tr from-[var(--agent-primary)] to-[var(--agent-secondary)] flex items-center justify-center shadow-lg transition-colors duration-300">
+
+        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl agent-gradient-bg flex items-center justify-center shadow-lg transition-colors duration-300 relative z-10">
           <span className="text-white text-2xl font-bold">AI</span>
         </div>
-        <h2 className="text-2xl md:text-3xl font-semibold text-[var(--text-primary)] mb-3">
+        
+        <h2 className="text-3xl md:text-4xl font-semibold text-[var(--text-primary)] mb-3 tracking-tight">
           {getGreeting()}
         </h2>
       </motion.div>
@@ -78,7 +92,7 @@ export default function WelcomeSection({ onSuggestionClick }) {
           <button
             key={i}
             onClick={() => onSuggestionClick(text)}
-            className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-secondary)] text-sm hover:text-[var(--text-primary)] hover:border-[var(--agent-primary)] hover:shadow-md transition-all duration-300 text-left"
+            className="p-4 bg-[var(--bg-card)] border border-[var(--border-color)] rounded-xl text-[var(--text-secondary)] text-sm font-medium transition-all duration-200 text-left hover:-translate-y-[3px] hover:shadow-md hover:border-[var(--agent-primary)] hover:text-[var(--text-primary)]"
           >
             {text}
           </button>
