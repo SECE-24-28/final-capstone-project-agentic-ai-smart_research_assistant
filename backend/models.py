@@ -21,7 +21,6 @@ class Paper(Base):
     summaries = relationship("Summary", back_populates="paper")
     citations = relationship("Citation", back_populates="paper")
     chat_history = relationship("ChatHistory", back_populates="paper")
-    literature_reviews = relationship("LiteratureReview", back_populates="paper")
 
 class Summary(Base):
     __tablename__ = "summaries"
@@ -56,6 +55,24 @@ class GapAnalysis(Base):
     result = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class LiteratureReview(Base):
+    __tablename__ = "literature_reviews"
+
+    id = Column(Integer, primary_key=True, index=True)
+    topic = Column(String(256), nullable=False)
+    paper_ids = Column(String(256), nullable=False)
+    result = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+class FinalReport(Base):
+    __tablename__ = "final_reports"
+
+    id = Column(Integer, primary_key=True, index=True)
+    topic = Column(String(256), nullable=False)
+    paper_ids = Column(String(256), nullable=False)
+    content = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class Citation(Base):
     __tablename__ = "citations"
 
@@ -80,13 +97,4 @@ class ChatHistory(Base):
 
     paper = relationship("Paper", back_populates="chat_history")
 
-class LiteratureReview(Base):
-    __tablename__ = "literature_reviews"
 
-    id = Column(Integer, primary_key=True, index=True)
-    paper_id = Column(Integer, ForeignKey("papers.id"), nullable=True)
-    review_type = Column(String(64), nullable=False)
-    content = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
-
-    paper = relationship("Paper", back_populates="literature_reviews")

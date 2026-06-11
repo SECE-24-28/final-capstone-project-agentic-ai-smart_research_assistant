@@ -71,3 +71,21 @@ class GapAnalysisResponse(BaseModel):
 
     class Config:
         orm_mode = True
+
+class LiteratureReviewResponse(BaseModel):
+    id: int
+    topic: str
+    paper_ids: str
+    result: str
+
+    class Config:
+        orm_mode = True
+
+class FinalReportResponse(BaseModel):
+    id: int
+    topic: str
+    paper_ids: str
+    content: str
+
+    class Config:
+        orm_mode = True
