@@ -9,8 +9,21 @@ class PaperSearchService:
         self.base_url = "https://api.openalex.org/works"
         
     def search_topic(self, topic: str, limit: int = 5) -> List[Dict[str, Any]]:
+        # Sanitize query to prevent 400 Bad Request from OpenAlex wildcards
+        clean_topic = topic.replace("?", "").replace("*", "").replace("!", "")
+        
+        # Heuristic: if it's a natural language question, try to use only the core words
+        lower_topic = clean_topic.lower()
+        stopwords = ["how", "do", "i", "can", "you", "find", "some", "research", "papers", "based", "on", "show", "me", "what", "is", "about", "a", "good", "the", "for"]
+        
+        # If it looks like a long conversational prompt, filter it
+        if len(clean_topic.split()) > 3 and any(sw in lower_topic.split() for sw in ["how", "can", "find", "show", "what"]):
+            words = [w for w in clean_topic.split() if w.lower() not in stopwords]
+            if words:
+                clean_topic = " ".join(words)
+                
         params = {
-            "search": topic,
+            "search": clean_topic,
             "per-page": limit,
             "sort": "relevance_score:desc",
             "filter": "has_abstract:true"
