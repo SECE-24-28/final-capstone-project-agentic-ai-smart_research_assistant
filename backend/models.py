@@ -98,3 +98,17 @@ class ChatHistory(Base):
     paper = relationship("Paper", back_populates="chat_history")
 
 
+class CoordinatorRun(Base):
+    """Records every Auto Mode coordinator execution for audit and analytics."""
+    __tablename__ = "coordinator_runs"
+
+    id         = Column(Integer, primary_key=True, index=True)
+    workflow   = Column(String(128), nullable=False)
+    intent     = Column(String(64),  nullable=False)
+    query      = Column(Text,        nullable=False)
+    topic      = Column(String(256), nullable=True)
+    task_id    = Column(String(128), nullable=True, index=True)
+    status     = Column(String(32),  nullable=False, default="pending")
+    result_type= Column(String(32),  nullable=True)
+    created_at = Column(DateTime,    default=datetime.utcnow)
+    completed_at = Column(DateTime,  nullable=True)

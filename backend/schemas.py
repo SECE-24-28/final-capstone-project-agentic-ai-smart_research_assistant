@@ -1,5 +1,5 @@
 from typing import List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 class PaperBase(BaseModel):
     title: str
@@ -20,8 +20,7 @@ class PaperCreate(PaperBase):
 class PaperResponse(PaperBase):
     id: int
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class SummaryResponse(BaseModel):
     paper_id: int
@@ -31,8 +30,7 @@ class SummaryResponse(BaseModel):
     limitations: Optional[str]
     contributions: Optional[str]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class ComparisonRequest(BaseModel):
     paper_ids: List[int]
@@ -63,23 +61,30 @@ class UploadResponse(BaseModel):
     file_path: str
     message: str
 
+class GapAnalysisRequest(BaseModel):
+    topic: str
+    paper_ids: List[int]
+
 class GapAnalysisResponse(BaseModel):
     id: int
-    topic: str
     paper_ids: str
-    result: str
+    unexplored_areas: Optional[str] = None
+    contradictions: Optional[str] = None
+    opportunities: Optional[str] = None
+    raw_text: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
+class LiteratureReviewRequest(BaseModel):
+    topic: str
+    paper_ids: List[int]
 
 class LiteratureReviewResponse(BaseModel):
     id: int
-    topic: str
     paper_ids: str
-    result: str
+    review_text: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 class FinalReportResponse(BaseModel):
     id: int
@@ -87,5 +92,63 @@ class FinalReportResponse(BaseModel):
     paper_ids: str
     content: str
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+class TaskStatusResponse(BaseModel):
+    task_id: str
+    task_type: str
+    status: str          # pending | running | done | failed
+    progress: int        # 0-100
+    current_step: str
+    created_at: str
+    completed_at: Optional[str] = None
+    error: Optional[str] = None
+
+
+class TaskStartResponse(BaseModel):
+    task_id: str
+    message: str
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  AUTO MODE SCHEMAS  (Phase 15)
+# ─────────────────────────────────────────────────────────────────────────────
+
+class AutoRequest(BaseModel):
+    query: str
+    paper_ids: Optional[List[int]] = None   # pre-selected papers (optional)
+
+
+class AutoStartResponse(BaseModel):
+    task_id: str
+    workflow: str
+    intent: str
+    topic: str
+    estimated_steps: int
+    estimated_duration: str
+    message: str
+
+
+class WorkflowStepSchema(BaseModel):
+    step_number: int
+    agent_name: str
+    description: str
+    status: str   # pending | running | done | skipped | failed
+
+
+class AutoResultResponse(BaseModel):
+    task_id: str
+    workflow: str
+    intent: str
+    topic: str
+    result_type: str            # text | papers | mixed
+    final_text: str
+    papers: Optional[List[dict]] = None
+    summaries: Optional[List[dict]] = None
+    comparison: Optional[str] = None
+    gap_analysis: Optional[dict] = None
+    literature_review: Optional[str] = None
+    chat_answer: Optional[str] = None
+    steps: Optional[List[WorkflowStepSchema]] = None
+    error: Optional[str] = None

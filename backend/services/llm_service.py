@@ -1,15 +1,17 @@
 import logging
 import time
-from typing import List
+import threading
+from typing import List, Generator
 
 from ..config import settings
 
 try:
-    from transformers import AutoTokenizer, AutoModelForCausalLM
+    from transformers import AutoTokenizer, AutoModelForCausalLM, TextIteratorStreamer
     import torch
 except ImportError:
     AutoTokenizer = None
     AutoModelForCausalLM = None
+    TextIteratorStreamer = None
     torch = None
 
 logger = logging.getLogger(__name__)
@@ -90,5 +92,77 @@ class LLMService:
         logger.info(f"COMPLETE: Generation finished in {gen_duration:.2f} seconds.")
         
         return response_text
+
+    def stream_generate(
+        self,
+        prompt: str,
+        max_tokens: int = 512,
+        system_prompt: str = "You are a helpful research assistant."
+    ) -> Generator[str, None, None]:
+        """
+        Yields decoded text tokens progressively using TextIteratorStreamer.
+        Runs model.generate() in a background thread so the main thread
+        can yield tokens as they are produced.
+        """
+        if not self._is_loaded:
+            self.load()
+
+        if TextIteratorStreamer is None:
+            # Fallback: yield the full response at once
+            result = self.generate(prompt, max_tokens, system_prompt)
+            yield result
+            return
+
+        logger.info(f"START: Stream-generating text (max_tokens={max_tokens})")
+        gen_start = time.time()
+
+        messages = [
+            {"role": "system", "content": system_prompt},
+            {"role": "user", "content": prompt}
+        ]
+
+        text = self.tokenizer.apply_chat_template(
+            messages,
+            tokenize=False,
+            add_generation_prompt=True
+        )
+
+        inputs = self.tokenizer(text, return_tensors="pt")
+
+        if torch and torch.cuda.is_available():
+            inputs = {k: v.to("cuda") for k, v in inputs.items()}
+
+        # TextIteratorStreamer yields decoded tokens from a background thread
+        streamer = TextIteratorStreamer(
+            self.tokenizer,
+            skip_prompt=True,
+            skip_special_tokens=True
+        )
+
+        generation_kwargs = dict(
+            **inputs,
+            streamer=streamer,
+            max_new_tokens=max_tokens,
+            do_sample=False,
+            pad_token_id=self.tokenizer.eos_token_id
+        )
+
+        # Launch generation in background thread
+        thread = threading.Thread(target=self.model.generate, kwargs=generation_kwargs)
+        thread.start()
+
+        # Yield tokens from the streamer as they arrive
+        first_token_logged = False
+        for token_text in streamer:
+            if token_text:
+                if not first_token_logged:
+                    ttft = time.time() - gen_start
+                    logger.info(f"STREAMING: First token in {ttft:.3f}s")
+                    first_token_logged = True
+                yield token_text
+
+        thread.join()
+        gen_duration = time.time() - gen_start
+        logger.info(f"STREAMING COMPLETE: Total generation time {gen_duration:.2f}s")
 
 llm_service = LLMService()
