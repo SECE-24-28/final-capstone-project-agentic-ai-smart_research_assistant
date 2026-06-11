@@ -1,0 +1,99 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    /* Light Mode Basics */
+    --bg-page: #FFFFFF;
+    --bg-sidebar: #F8F8F8;
+    --bg-card: #FFFFFF;
+    --text-primary: #111111;
+    --text-secondary: #6B7280;
+    --border-color: #E5E7EB;
+
+    /* Default Agent Colors (Search) */
+    --agent-primary: #E11D48;
+    --agent-secondary: #22C55E;
+  }
+
+  .dark {
+    /* Dark Mode Basics */
+    --bg-page: #0A0A0A;
+    --bg-sidebar: #111111;
+    --bg-card: #161616;
+    --text-primary: #FFFFFF;
+    --text-secondary: #9CA3AF;
+    --border-color: #27272A;
+  }
+}
+
+/* Agent Color System */
+[data-agent="search"] {
+  --agent-primary: #E11D48;
+  --agent-secondary: #22C55E;
+}
+
+[data-agent="summary"] {
+  --agent-primary: #14B8A6;
+  --agent-secondary: #EC4899;
+}
+
+[data-agent="chat"] {
+  --agent-primary: #64748B;
+  --agent-secondary: #F97316;
+}
+
+[data-agent="comparison"] {
+  --agent-primary: #6B8E23;
+  --agent-secondary: #FDBA74;
+}
+
+[data-agent="gap"] {
+  --agent-primary: #7C3AED;
+  --agent-secondary: #06B6D4;
+}
+
+[data-agent="review"] {
+  --agent-primary: #1E3A8A;
+  --agent-secondary: #FBBF24;
+}
+
+body {
+  @apply bg-[var(--bg-page)] text-[var(--text-primary)] font-sans antialiased transition-colors duration-200;
+}
+
+/* Markdown styling inside assistant messages */
+.markdown-body {
+  @apply space-y-4;
+}
+.markdown-body h1, .markdown-body h2, .markdown-body h3, .markdown-body h4 {
+  @apply font-bold mt-6 mb-2 text-[var(--text-primary)];
+}
+.markdown-body h1 { @apply text-2xl; }
+.markdown-body h2 { @apply text-xl border-b border-[var(--border-color)] pb-2; }
+.markdown-body h3 { @apply text-lg; }
+.markdown-body p { @apply leading-relaxed; }
+.markdown-body ul { @apply list-disc list-inside space-y-1; }
+.markdown-body ol { @apply list-decimal list-inside space-y-1; }
+.markdown-body code {
+  @apply bg-opacity-20 bg-[var(--text-secondary)] rounded px-1.5 py-0.5 text-sm font-mono text-[var(--agent-primary)];
+}
+.markdown-body pre {
+  @apply bg-[#1E1E1E] text-white p-4 rounded-lg overflow-x-auto text-sm my-4 border border-[var(--border-color)];
+}
+.markdown-body pre code {
+  @apply bg-transparent text-inherit p-0;
+}
+.markdown-body blockquote {
+  @apply border-l-4 border-[var(--agent-primary)] pl-4 italic text-[var(--text-secondary)];
+}
+.markdown-body table {
+  @apply w-full border-collapse my-4;
+}
+.markdown-body th, .markdown-body td {
+  @apply border border-[var(--border-color)] p-2 text-left;
+}
+.markdown-body th {
+  @apply bg-[var(--bg-sidebar)];
+}
