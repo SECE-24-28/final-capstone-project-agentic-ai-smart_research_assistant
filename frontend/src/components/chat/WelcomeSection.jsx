@@ -60,7 +60,7 @@ export default function WelcomeSection({ onSuggestionClick }) {
         transition={{ duration: 0.5 }}
         className="mb-8"
       >
-        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl bg-gradient-to-tr from-[var(--agent-primary)] to-[var(--agent-secondary)] flex items-center justify-center shadow-lg transition-colors duration-300">
+        <div className="w-16 h-16 mx-auto mb-6 rounded-2xl agent-gradient-bg flex items-center justify-center shadow-lg transition-colors duration-300">
           <span className="text-white text-2xl font-bold">AI</span>
         </div>
         <h2 className="text-2xl md:text-3xl font-semibold text-[var(--text-primary)] mb-3">

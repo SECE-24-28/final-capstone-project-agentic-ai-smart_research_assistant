@@ -63,6 +63,31 @@ body {
   @apply bg-[var(--bg-page)] text-[var(--text-primary)] font-sans antialiased transition-colors duration-200;
 }
 
+/* Agent Gradient Utilities */
+.agent-gradient-bg {
+  background: linear-gradient(135deg, var(--agent-primary), var(--agent-secondary));
+}
+
+.agent-gradient-text {
+  background: linear-gradient(135deg, var(--agent-primary), var(--agent-secondary));
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  color: transparent;
+}
+
+/* Gradient Border for 1px (requires wrapper padding) */
+.agent-gradient-border-wrapper {
+  background: linear-gradient(90deg, var(--agent-primary), var(--agent-secondary));
+  padding: 1px;
+}
+
+/* Left Border Gradient for Sidebar items */
+.agent-left-border {
+  border-left: 2px solid transparent;
+  border-image: linear-gradient(to bottom, var(--agent-primary), var(--agent-secondary)) 1;
+}
+
 /* Markdown styling inside assistant messages */
 .markdown-body {
   @apply space-y-4;

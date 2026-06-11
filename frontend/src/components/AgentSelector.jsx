@@ -60,12 +60,12 @@ export default function AgentSelector() {
                       setSelectedAgentId(agent.id);
                       setIsOpen(false);
                     }}
-                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-colors duration-150 ${
-                      isActive ? 'bg-[var(--bg-sidebar)] font-medium text-[var(--text-primary)]' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] hover:text-[var(--text-primary)]'
+                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-left transition-all duration-150 border-l-2 ${
+                      isActive ? 'bg-[var(--bg-sidebar)] font-medium agent-left-border shadow-sm' : 'text-[var(--text-secondary)] hover:bg-[var(--bg-sidebar)] hover:text-[var(--text-primary)] border-transparent'
                     }`}
                   >
-                    <AgentIcon className="w-4 h-4" style={{ color: isActive ? 'var(--agent-primary)' : 'currentColor' }} />
-                    {agent.name}
+                    <AgentIcon className={`w-4 h-4 ${isActive ? 'agent-gradient-text' : ''}`} style={{ color: isActive ? 'var(--agent-primary)' : 'currentColor' }} />
+                    <span className={isActive ? 'agent-gradient-text' : ''}>{agent.name}</span>
                   </button>
                 );
               })}

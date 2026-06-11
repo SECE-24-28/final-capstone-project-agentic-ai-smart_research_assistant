@@ -14,9 +14,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app.include_router(search.router)
-app.include_router(upload.router)
-app.include_router(agent.router)
+app.include_router(search)
+app.include_router(upload)
+app.include_router(agent)
 
 @app.on_event("startup")
 def startup_event():

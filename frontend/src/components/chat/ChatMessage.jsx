@@ -18,7 +18,7 @@ export default function ChatMessage({ message }) {
   // Assistant Message
   return (
     <div className="flex w-full gap-4 items-start">
-      <div className="w-8 h-8 shrink-0 rounded-full bg-gradient-to-tr from-[var(--agent-primary)] to-[var(--agent-secondary)] flex items-center justify-center shadow-sm transition-colors duration-300 mt-1">
+      <div className="w-8 h-8 shrink-0 rounded-full agent-gradient-bg flex items-center justify-center shadow-sm transition-colors duration-300 mt-1">
         <span className="text-white text-xs font-bold">AI</span>
       </div>
       <div className="flex-1 min-w-0">
