@@ -7,6 +7,13 @@ class GapAgent:
         self.session = session
 
     def analyze_gaps(self, topic: str, paper_ids: list[int], comparison_id: int | None = None) -> GapAnalysis:
+        paper_ids_str = ','.join(map(str, paper_ids))
+        
+        # Caching Layer: Check if we already generated a gap analysis for these exact papers
+        existing_gap = self.session.query(GapAnalysis).filter_by(topic=topic, paper_ids=paper_ids_str).first()
+        if existing_gap:
+            return existing_gap
+
         papers = self.session.query(Paper).filter(Paper.id.in_(paper_ids)).all()
         if not papers:
             raise ValueError("No papers found for gap analysis")

@@ -21,6 +21,16 @@ app.include_router(agent.router)
 @app.on_event("startup")
 def startup_event():
     init_db()
+    # Pre-load heavy models on startup to avoid blocking the first request
+    from .services.llm_service import llm_service
+    from .services.embedding_service import embedding_service
+    import threading
+    
+    # Load embedding model immediately
+    embedding_service.load()
+    
+    # Load LLM in a background thread so the server port binds quickly
+    threading.Thread(target=llm_service.load, daemon=True).start()
 
 @app.get("/")
 def root():

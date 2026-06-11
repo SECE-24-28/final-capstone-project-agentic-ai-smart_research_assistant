@@ -7,6 +7,13 @@ class LiteratureReviewAgent:
         self.session = session
 
     def generate_review(self, topic: str, paper_ids: list[int], comparison_id: int | None = None, gap_id: int | None = None) -> LiteratureReview:
+        paper_ids_str = ','.join(map(str, paper_ids))
+        
+        # Caching Layer: Check if we already generated a review for these exact papers
+        existing_review = self.session.query(LiteratureReview).filter_by(topic=topic, paper_ids=paper_ids_str).first()
+        if existing_review:
+            return existing_review
+
         papers = self.session.query(Paper).filter(Paper.id.in_(paper_ids)).all()
         if not papers:
             raise ValueError("No papers found for literature review")

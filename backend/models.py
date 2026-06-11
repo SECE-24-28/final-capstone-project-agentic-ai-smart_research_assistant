@@ -41,8 +41,8 @@ class Comparison(Base):
     __tablename__ = "comparisons"
 
     id = Column(Integer, primary_key=True, index=True)
-    name = Column(String(256), nullable=False)
-    paper_ids = Column(String(256), nullable=False)
+    name = Column(String(256), nullable=False, index=True)
+    paper_ids = Column(String(256), nullable=False, index=True)
     result = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
@@ -68,8 +68,8 @@ class FinalReport(Base):
     __tablename__ = "final_reports"
 
     id = Column(Integer, primary_key=True, index=True)
-    topic = Column(String(256), nullable=False)
-    paper_ids = Column(String(256), nullable=False)
+    topic = Column(String(256), nullable=False, index=True)
+    paper_ids = Column(String(256), nullable=False, index=True)
     content = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
