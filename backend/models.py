@@ -47,6 +47,15 @@ class Comparison(Base):
     result = Column(Text, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
 
+class GapAnalysis(Base):
+    __tablename__ = "gap_analyses"
+
+    id = Column(Integer, primary_key=True, index=True)
+    topic = Column(String(256), nullable=False)
+    paper_ids = Column(String(256), nullable=False)
+    result = Column(Text, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+
 class Citation(Base):
     __tablename__ = "citations"
 

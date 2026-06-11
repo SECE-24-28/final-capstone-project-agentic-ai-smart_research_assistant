@@ -62,3 +62,12 @@ class UploadResponse(BaseModel):
     paper_id: int
     file_path: str
     message: str
+
+class GapAnalysisResponse(BaseModel):
+    id: int
+    topic: str
+    paper_ids: str
+    result: str
+
+    class Config:
+        orm_mode = True
