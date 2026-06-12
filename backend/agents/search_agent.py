@@ -7,10 +7,16 @@ class SearchAgent:
         self.session = session
 
     def search_and_store(self, topic: str, limit: int = 5) -> list[Paper]:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"SearchAgent.search_and_store: topic='{topic}', limit={limit}")
+
         results = paper_search_service.search_topic(topic, limit=limit)
         saved_papers = []
+        new_saved_count = 0
+
         for res in results:
-            # Check if paper already exists
+            # Check if paper already exists by title
             existing = self.session.query(Paper).filter(Paper.title == res["title"]).first()
             if not existing:
                 paper = Paper(
@@ -20,16 +26,25 @@ class SearchAgent:
                     year=res["year"],
                     doi=res["doi"],
                     source=res["source"],
-                    file_path=res["url"] # Store OpenAlex ID URL as file_path placeholder
+                    file_path=res["url"]  # Store OpenAlex ID URL as file_path placeholder
                 )
                 self.session.add(paper)
                 self.session.commit()
                 self.session.refresh(paper)
-                saved_papers.append(paper)
+                new_saved_count += 1
             else:
-                saved_papers.append(existing)
-                
+                paper = existing
+
+            # Attach similarity score as a transient attribute (not persisted to DB)
+            paper.similarity_score = res.get("similarity_score", None)
+            saved_papers.append(paper)
+
+        logger.info(
+            f"SearchAgent.search_and_store: {new_saved_count} new papers_saved, "
+            f"{len(saved_papers)} total papers_returned"
+        )
         return saved_papers
+
 
     def create_paper(self, paper_data: dict) -> Paper:
         paper = Paper(**paper_data)

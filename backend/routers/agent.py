@@ -10,6 +10,9 @@ from ..schemas import (
 )
 import re
 import threading
+import logging
+
+logger = logging.getLogger(__name__)
 from ..agents.coordinator import CoordinatorAgent
 from ..agents.summary_agent import SummaryAgent
 from ..agents.comparison_agent import ComparisonAgent
@@ -77,6 +80,7 @@ def citation(payload: CitationRequest):
 
 def _run_summary(task_id: str, paper_id: int):
     """Background worker for summary generation with progress updates."""
+    logger.info(f"Worker Thread Start: _run_summary for task_id={task_id}, paper_id={paper_id}")
     db = SessionLocal()
     try:
         task_service.update(task_id, status="running", progress=5,
@@ -85,10 +89,27 @@ def _run_summary(task_id: str, paper_id: int):
 
         task_service.update(task_id, progress=15,
                             current_step="Retrieving document chunks…")
-        summary_obj = coordinator.route_summary(paper_id)
 
-        task_service.mark_done(task_id, result=summary_obj)
+        logger.info(f"Summary Generation Start: Coordinator routing summary for paper_id={paper_id}")
+        summary_obj = coordinator.route_summary(paper_id)
+        logger.info(f"Summary Generation End: summary object retrieved for task_id={task_id}")
+
+        # Convert SQLAlchemy model to dict to avoid DetachedInstanceError after db.close()
+        result_data = {
+            "id": summary_obj.id,
+            "paper_id": summary_obj.paper_id,
+            "objective": summary_obj.objective,
+            "methodology": summary_obj.methodology,
+            "findings": summary_obj.findings,
+            "limitations": summary_obj.limitations,
+            "contributions": summary_obj.contributions,
+            "raw_text": summary_obj.raw_text
+        }
+
+        task_service.mark_done(task_id, result=result_data)
+        logger.info(f"Database Save & Task Done: task_id={task_id}")
     except Exception as exc:
+        logger.error(f"Error in _run_summary for task_id={task_id}: {exc}", exc_info=True)
         task_service.mark_failed(task_id, str(exc))
     finally:
         db.close()
@@ -96,8 +117,33 @@ def _run_summary(task_id: str, paper_id: int):
 
 @router.post("/summary", response_model=TaskStartResponse)
 def summary(paper_id: int):
-    """Start async summary generation. Poll /agent/task/{task_id} for progress."""
+    """Start async summary generation. Checks cache synchronously before spawning thread."""
+    from ..models import Summary as SummaryModel
     record = task_service.create("summary")
+    logger.info(f"Task_id creation: POST /agent/summary generated task_id={record.task_id} for paper_id={paper_id}")
+
+    # Fast-path cache: check DB synchronously before spawning thread
+    db = SessionLocal()
+    try:
+        existing = db.query(SummaryModel).filter(SummaryModel.paper_id == paper_id).first()
+        if existing:
+            logger.info(f"Cache hit (sync): Summary exists for paper_id={paper_id}. Marking task done immediately.")
+            result_data = {
+                "id": existing.id,
+                "paper_id": existing.paper_id,
+                "objective": existing.objective,
+                "methodology": existing.methodology,
+                "findings": existing.findings,
+                "limitations": existing.limitations,
+                "contributions": existing.contributions,
+                "raw_text": existing.raw_text
+            }
+            task_service.mark_done(record.task_id, result=result_data)
+            return TaskStartResponse(task_id=record.task_id, message="Summary served from cache")
+    finally:
+        db.close()
+
+    # No cache hit: spawn background thread for full LLM generation
     threading.Thread(
         target=_run_summary,
         args=(record.task_id, paper_id),
@@ -110,6 +156,7 @@ def summary(paper_id: int):
 @router.get("/summary/result/{task_id}", response_model=SummaryResponse)
 def summary_result(task_id: str):
     """Retrieve the completed summary result for a task."""
+    logger.info(f"GET /agent/summary/result/{task_id} requested")
     record = task_service.get(task_id)
     if record is None:
         raise HTTPException(status_code=404, detail="Task not found")
@@ -117,7 +164,11 @@ def summary_result(task_id: str):
         raise HTTPException(status_code=500, detail=record.error)
     if record.status != "done" or record.result is None:
         raise HTTPException(status_code=202, detail="Task still in progress")
+
+    logger.info(f"GET /agent/summary/result/{task_id} returning valid SummaryResponse")
     return record.result
+
+
 
 
 def _run_comparison(task_id: str, paper_ids: list, dimension: str | None):
@@ -185,32 +236,53 @@ def chat_stream(payload: ChatRequest, db: Session = Depends(get_db)):
     """Stream Chat Agent responses token-by-token via SSE."""
     try:
         agent = ChatAgent(db)
-        query_embedding = embedding_service.embed_texts([payload.question])
-        where_filter = None
+        context_chunks = []
+
+        # Only search vector store when paper_ids are provided
         if payload.paper_ids:
+            query_embedding = embedding_service.embed_texts([payload.question])
+            where_filter = None
             if len(payload.paper_ids) == 1:
                 where_filter = {"paper_id": payload.paper_ids[0]}
             else:
                 where_filter = {"paper_id": {"$in": payload.paper_ids}}
 
-        context_chunks = []
-        if vector_store.collection is not None:
-            results = vector_store.query(query_embedding, n_results=5, where=where_filter)
-            if results and "documents" in results and results["documents"]:
-                context_chunks = results["documents"][0]
+            if vector_store.collection is not None:
+                results = vector_store.query(query_embedding, n_results=5, where=where_filter)
+                if results and "documents" in results and results["documents"]:
+                    context_chunks = results["documents"][0]
 
-        if not context_chunks:
-            def no_context():
-                msg = "I could not find any relevant information in the uploaded documents."
-                yield f"data: {msg}\n\n"
-                yield "event: done\ndata: [DONE]\n\n"
-            return StreamingResponse(no_context(), media_type="text/event-stream")
+            # Abstract fallback when vector chunks empty but papers specified
+            if not context_chunks:
+                from ..models import Paper as PaperModel
+                papers = db.query(PaperModel).filter(PaperModel.id.in_(payload.paper_ids)).all()
+                for p in papers:
+                    if p.abstract:
+                        context_chunks.append(f"Abstract of '{p.title}': {p.abstract}")
+                
+                if not context_chunks:
+                    def no_context():
+                        msg = "I could not find any relevant information in the selected documents to answer your question."
+                        yield f"data: {msg}\n\n"
+                        yield "event: done\ndata: [DONE]\n\n"
+                    return StreamingResponse(no_context(), media_type="text/event-stream")
 
-        system_prompt = (
-            "You are a strict, grounded academic research assistant. "
-            "Answer ONLY using the provided document context. Do NOT hallucinate."
-        )
-        prompt = agent.build_prompt(payload.question, context_chunks)
+        if context_chunks:
+            # Document-grounded mode
+            system_prompt = (
+                "You are a strict, grounded academic research assistant. "
+                "Answer ONLY using the provided document context. Do NOT hallucinate."
+            )
+            prompt = agent.build_prompt(payload.question, context_chunks)
+        else:
+            # General assistant mode - no documents selected
+            system_prompt = (
+                "You are a helpful, knowledgeable academic research assistant. "
+                "Answer the user's question clearly and concisely. "
+                "If asked for ideas, projects, or explanations, provide helpful, accurate information."
+            )
+            prompt = payload.question
+
         token_stream = llm_service.stream_generate(prompt, max_tokens=384, system_prompt=system_prompt)
         return StreamingResponse(_sse_token_generator(token_stream), media_type="text/event-stream")
     except Exception as exc:

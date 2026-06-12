@@ -9,8 +9,19 @@ class SummaryAgent:
         self.session = session
 
     def summarize_paper(self, paper_id: int) -> Summary:
+        import logging
+        logger = logging.getLogger(__name__)
+        logger.info(f"SummaryAgent.summarize_paper called for paper_id={paper_id}")
+        
+        # Caching: Check if summary already exists
+        existing_summary = self.session.query(Summary).filter(Summary.paper_id == paper_id).first()
+        if existing_summary:
+            logger.info(f"SummaryAgent.summarize_paper: Found existing summary for paper_id={paper_id}. Returning cached result.")
+            return existing_summary
+
         paper = self.session.get(Paper, paper_id)
         if not paper:
+            logger.error(f"SummaryAgent.summarize_paper: Paper not found for paper_id={paper_id}")
             raise ValueError("Paper not found")
 
         query = f"Summarize this academic paper. Paper title: {paper.title}." 
@@ -24,9 +35,13 @@ class SummaryAgent:
             results = vector_store.query(embeddings, n_results=5, where={"paper_id": paper.id})
             for item in results.get("documents", [[]])[0]:
                 top_chunks.append(item)
+                
+        logger.info(f"SummaryAgent.summarize_paper: Retrieved {len(top_chunks)} chunks from vector store.")
 
         prompt = self.build_prompt(query, top_chunks)
+        logger.info(f"SummaryAgent.summarize_paper: Starting LLM generation.")
         result_text = llm_service.generate(prompt, max_tokens=1024)
+        logger.info(f"SummaryAgent.summarize_paper: LLM generation complete. Parsing result.")
         
         # Parse the structured response
         parsed = self.parse_summary(result_text)
@@ -43,6 +58,7 @@ class SummaryAgent:
         self.session.add(summary)
         self.session.commit()
         self.session.refresh(summary)
+        logger.info(f"SummaryAgent.summarize_paper: Saved new summary to DB for paper_id={paper_id}")
         return summary
 
     def build_prompt(self, query: str, chunks: list[str]) -> str:
@@ -68,13 +84,18 @@ class SummaryAgent:
         return "\n".join(pieces)
 
     def parse_summary(self, text: str) -> dict:
+        import re
         sections = {"Objective": "", "Methodology": "", "Findings": "", "Limitations": "", "Contributions": ""}
         current_section = None
         
         for line in text.split('\n'):
             line_stripped = line.strip()
-            if line_stripped.startswith("## "):
-                header = line_stripped.replace("## ", "").strip()
+            
+            # Use regex to find header variants (e.g. "### Objective", "**Objective**:", "Objective:")
+            header_match = re.search(r'^(?:#+\s*|\*+)?(Objective|Methodology|Findings|Limitations|Contributions)(?:\*+:?)?', line_stripped, re.IGNORECASE)
+            
+            if header_match:
+                header = header_match.group(1).capitalize()
                 if header in sections:
                     current_section = header
                     continue

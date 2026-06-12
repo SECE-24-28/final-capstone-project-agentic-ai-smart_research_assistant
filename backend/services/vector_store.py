@@ -41,3 +41,4 @@ class VectorStoreService:
         return self.collection.query(query_embeddings=query_embeddings, n_results=n_results, where=where)
 
 vector_store = VectorStoreService()
+# Trigger uvicorn reload after installing chromadb

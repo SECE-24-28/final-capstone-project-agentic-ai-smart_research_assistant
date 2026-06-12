@@ -19,16 +19,18 @@ class PaperCreate(PaperBase):
 
 class PaperResponse(PaperBase):
     id: int
+    similarity_score: Optional[float] = None
 
     model_config = ConfigDict(from_attributes=True)
 
 class SummaryResponse(BaseModel):
     paper_id: int
-    objective: Optional[str]
-    methodology: Optional[str]
-    findings: Optional[str]
-    limitations: Optional[str]
-    contributions: Optional[str]
+    objective: Optional[str] = None
+    methodology: Optional[str] = None
+    findings: Optional[str] = None
+    limitations: Optional[str] = None
+    contributions: Optional[str] = None
+    raw_text: Optional[str] = None
 
     model_config = ConfigDict(from_attributes=True)
 
