@@ -51,6 +51,8 @@ export default function PaperCard({ paper }) {
 
           {/* Metadata */}
           <div className="text-xs text-[var(--text-secondary)] flex flex-wrap gap-x-4 gap-y-1">
+            {paper.source && <span className="font-semibold text-[var(--agent-primary)]">[{paper.source}]</span>}
+            {paper.similarity_score && <span className="text-green-500 font-medium">Similarity: {(paper.similarity_score * 100).toFixed(1)}%</span>}
             {paper.authors && <span>👨‍🔬 {paper.authors.split(',')[0]} et al.</span>}
             {paper.year && <span>📅 {paper.year}</span>}
             {paper.doi && (

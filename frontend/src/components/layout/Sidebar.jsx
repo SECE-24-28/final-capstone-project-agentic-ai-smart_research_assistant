@@ -43,9 +43,9 @@ export default function Sidebar() {
       {/* Navigation */}
       <div className="px-3 space-y-1 relative z-10">
         <NavItem to="/" icon={MessageSquare} label="Chat" />
-        <NavItem to="/library" icon={Library} label="Library" />
         <NavItem to="/reports" icon={FileText} label="Reports" />
-        <NavItem to="/email" icon={Mail} label="Email" />
+        {/* <NavItem to="/library" icon={Library} label="Library" /> */}
+        {/* <NavItem to="/email" icon={Mail} label="Email" /> */}
       </div>
 
       {/* Recent Chats (Mock) */}

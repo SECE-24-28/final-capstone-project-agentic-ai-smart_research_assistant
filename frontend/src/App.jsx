@@ -19,9 +19,9 @@ function App() {
           <Routes>
             <Route path="/" element={<MainLayout />}>
               <Route index element={<ChatPage />} />
-              <Route path="library" element={<LibraryPage />} />
+              {/* <Route path="library" element={<LibraryPage />} /> */}
               <Route path="reports" element={<ReportsPage />} />
-              <Route path="email" element={<EmailPage />} />
+              {/* <Route path="email" element={<EmailPage />} /> */}
               <Route path="settings" element={<SettingsPage />} />
             </Route>
           </Routes>
