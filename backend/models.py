@@ -50,11 +50,18 @@ class Comparison(Base):
 class FinalReport(Base):
     __tablename__ = "final_reports"
 
-    id = Column(Integer, primary_key=True, index=True)
-    topic = Column(String(256), nullable=False, index=True)
-    paper_ids = Column(String(256), nullable=False, index=True)
-    content = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    id              = Column(Integer, primary_key=True, index=True)
+    title           = Column(String(512), nullable=True)
+    topic           = Column(String(256), nullable=False, index=True)
+    paper_ids       = Column(String(512), nullable=False, index=True)
+    summary_ids     = Column(String(256), nullable=True)
+    comparison_id   = Column(Integer, nullable=True)
+    # legacy column kept as-is so existing rows are not lost
+    content         = Column(Text, nullable=True)
+    # primary storage – new reports write here
+    report_markdown = Column(Text, nullable=True)
+    template_type   = Column(String(64), nullable=True, default="Research Report")
+    created_at      = Column(DateTime, default=datetime.utcnow)
 
 class Citation(Base):
     __tablename__ = "citations"
