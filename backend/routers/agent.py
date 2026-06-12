@@ -5,8 +5,6 @@ from ..database import SessionLocal
 from ..schemas import (
     ComparisonRequest, ComparisonResponse, CitationRequest, CitationResponse,
     ChatRequest, ChatResponse, SummaryResponse,
-    GapAnalysisRequest, GapAnalysisResponse,
-    LiteratureReviewRequest, LiteratureReviewResponse,
     TaskStatusResponse, TaskStartResponse,
     AutoRequest, AutoStartResponse, AutoResultResponse, WorkflowStepSchema,
 )
@@ -15,8 +13,6 @@ import threading
 from ..agents.coordinator import CoordinatorAgent
 from ..agents.summary_agent import SummaryAgent
 from ..agents.comparison_agent import ComparisonAgent
-from ..agents.gap_agent import GapAgent
-from ..agents.literature_review_agent import LiteratureReviewAgent
 from ..agents.chat_agent import ChatAgent
 from ..services.citation_service import citation_service
 from ..services.llm_service import llm_service
@@ -168,114 +164,6 @@ def compare_result(task_id: str):
     return ComparisonResponse(name=comparison.name, result=comparison.result)
 
 
-def _run_gap(task_id: str, topic: str, paper_ids: list):
-    db = SessionLocal()
-    try:
-        task_service.update(task_id, status="running", progress=5,
-                            current_step="Loading papers for gap analysis…")
-        coordinator = CoordinatorAgent(db)
-
-        task_service.update(task_id, progress=20,
-                            current_step="Analyzing research landscape…")
-        gap_analysis = coordinator.route_gap(topic, paper_ids)
-
-        task_service.mark_done(task_id, result=gap_analysis)
-    except Exception as exc:
-        task_service.mark_failed(task_id, str(exc))
-    finally:
-        db.close()
-
-
-@router.post("/gap", response_model=TaskStartResponse)
-def gap(payload: GapAnalysisRequest):
-    """Start async gap analysis. Poll /agent/task/{task_id} for progress."""
-    record = task_service.create("gap")
-    threading.Thread(
-        target=_run_gap,
-        args=(record.task_id, payload.topic, payload.paper_ids),
-        daemon=True,
-    ).start()
-    return TaskStartResponse(task_id=record.task_id,
-                             message="Gap analysis started")
-
-
-@router.get("/gap/result/{task_id}", response_model=GapAnalysisResponse)
-def gap_result(task_id: str):
-    record = task_service.get(task_id)
-    if record is None:
-        raise HTTPException(status_code=404, detail="Task not found")
-    if record.status == "failed":
-        raise HTTPException(status_code=500, detail=record.error)
-    if record.status != "done" or record.result is None:
-        raise HTTPException(status_code=202, detail="Task still in progress")
-    gap_analysis = record.result
-    result_text = gap_analysis.result or ""
-
-    def extract_section(title: str) -> str | None:
-        pattern = rf"##\s*{title}\s*\n(.*?)(?=\n##\s*|\Z)"
-        match = re.search(pattern, result_text, re.DOTALL | re.IGNORECASE)
-        return match.group(1).strip() if match else None
-
-    return GapAnalysisResponse(
-        id=gap_analysis.id,
-        paper_ids=gap_analysis.paper_ids,
-        unexplored_areas=extract_section("Unexplored Areas"),
-        contradictions=extract_section("Contradictions"),
-        opportunities=extract_section("Future Opportunities")
-            or extract_section("Recommended Research Opportunities")
-            or extract_section("Future Research Directions"),
-        raw_text=result_text,
-    )
-
-
-def _run_review(task_id: str, topic: str, paper_ids: list):
-    db = SessionLocal()
-    try:
-        task_service.update(task_id, status="running", progress=5,
-                            current_step="Loading papers for review…")
-        coordinator = CoordinatorAgent(db)
-
-        task_service.update(task_id, progress=20,
-                            current_step="Synthesizing literature…")
-        lit_review = coordinator.route_review(topic, paper_ids)
-
-        task_service.mark_done(task_id, result=lit_review)
-    except Exception as exc:
-        task_service.mark_failed(task_id, str(exc))
-    finally:
-        db.close()
-
-
-@router.post("/review", response_model=TaskStartResponse)
-def review(payload: LiteratureReviewRequest):
-    """Start async literature review. Poll /agent/task/{task_id} for progress."""
-    record = task_service.create("review")
-    threading.Thread(
-        target=_run_review,
-        args=(record.task_id, payload.topic, payload.paper_ids),
-        daemon=True,
-    ).start()
-    return TaskStartResponse(task_id=record.task_id,
-                             message="Literature review started")
-
-
-@router.get("/review/result/{task_id}", response_model=LiteratureReviewResponse)
-def review_result(task_id: str):
-    record = task_service.get(task_id)
-    if record is None:
-        raise HTTPException(status_code=404, detail="Task not found")
-    if record.status == "failed":
-        raise HTTPException(status_code=500, detail=record.error)
-    if record.status != "done" or record.result is None:
-        raise HTTPException(status_code=202, detail="Task still in progress")
-    lit_review = record.result
-    return LiteratureReviewResponse(
-        id=lit_review.id,
-        paper_ids=lit_review.paper_ids,
-        review_text=lit_review.result or "",
-    )
-
-
 # ─────────────────────────────────────────────────────────────────────────────
 #  STREAMING ENDPOINTS  (SSE – text/event-stream)
 # ─────────────────────────────────────────────────────────────────────────────
@@ -373,50 +261,6 @@ def compare_stream(payload: ComparisonRequest, db: Session = Depends(get_db)):
         )
         prompt = agent.build_prompt(papers, payload.dimension)
         token_stream = llm_service.stream_generate(prompt, max_tokens=1536, system_prompt=system_prompt)
-        return StreamingResponse(_sse_token_generator(token_stream), media_type="text/event-stream")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-@router.post("/gap/stream")
-def gap_stream(payload: GapAnalysisRequest, db: Session = Depends(get_db)):
-    """Stream Gap Analysis Agent responses token-by-token via SSE."""
-    try:
-        agent = GapAgent(db)
-        papers = db.query(Paper).filter(Paper.id.in_(payload.paper_ids)).all()
-        if not papers:
-            raise HTTPException(status_code=404, detail="No papers found for gap analysis")
-
-        system_prompt = (
-            "You are a strict academic research analyst identifying research gaps. "
-            "Use ONLY the provided information. Never fabricate gaps or evidence."
-        )
-        prompt = agent.build_prompt(payload.topic, papers, None)
-        token_stream = llm_service.stream_generate(prompt, max_tokens=1536, system_prompt=system_prompt)
-        return StreamingResponse(_sse_token_generator(token_stream), media_type="text/event-stream")
-    except HTTPException:
-        raise
-    except Exception as exc:
-        raise HTTPException(status_code=500, detail=str(exc))
-
-
-@router.post("/review/stream")
-def review_stream(payload: LiteratureReviewRequest, db: Session = Depends(get_db)):
-    """Stream Literature Review Agent responses token-by-token via SSE."""
-    try:
-        agent = LiteratureReviewAgent(db)
-        papers = db.query(Paper).filter(Paper.id.in_(payload.paper_ids)).all()
-        if not papers:
-            raise HTTPException(status_code=404, detail="No papers found for literature review")
-
-        system_prompt = (
-            "You are an expert academic writer. Synthesize a formal Literature Review. "
-            "Use ONLY the provided contexts. Maintain academic tone."
-        )
-        prompt = agent.build_prompt(payload.topic, papers, None, None)
-        token_stream = llm_service.stream_generate(prompt, max_tokens=2048, system_prompt=system_prompt)
         return StreamingResponse(_sse_token_generator(token_stream), media_type="text/event-stream")
     except HTTPException:
         raise
@@ -560,8 +404,6 @@ def auto_result(task_id: str):
         papers=result.papers or [],
         summaries=result.summaries or [],
         comparison=result.comparison,
-        gap_analysis=result.gap_analysis,
-        literature_review=result.literature_review,
         chat_answer=result.chat_answer,
         steps=steps,
         error=result.error,

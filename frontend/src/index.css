@@ -59,19 +59,7 @@
   --glow-pos-2-x: -10%; --glow-pos-2-y: 110%;
 }
 
-[data-agent="gap"] {
-  --agent-primary: #7C3AED; /* Purple */
-  --agent-secondary: #06B6D4; /* Cyan */
-  --glow-pos-1-x: -10%; --glow-pos-1-y: -10%;
-  --glow-pos-2-x: 110%; --glow-pos-2-y: 110%;
-}
 
-[data-agent="review"] {
-  --agent-primary: #4F46E5; /* Indigo */
-  --agent-secondary: #F43F5E; /* Rose */
-  --glow-pos-1-x: 110%; --glow-pos-1-y: -10%;
-  --glow-pos-2-x: -10%; --glow-pos-2-y: 110%;
-}
 
 [data-agent="auto"] {
   --agent-primary: #6366F1; /* Indigo */

@@ -41,22 +41,11 @@ class IntentType(str, Enum):
     SEARCH_PAPERS            = "search_papers"
     SUMMARIZE_PAPERS         = "summarize_papers"
     COMPARE_PAPERS           = "compare_papers"
-    FIND_RESEARCH_GAPS       = "find_research_gaps"
-    GENERATE_LITERATURE_REVIEW = "generate_literature_review"
     GENERAL_RAG_CHAT         = "general_rag_chat"
 
 
 # Keyword patterns for rule-based intent classification
 _INTENT_RULES: list[tuple[IntentType, list[str]]] = [
-    (IntentType.GENERATE_LITERATURE_REVIEW, [
-        "literature review", "systematic review", "survey paper",
-        "write a review", "generate review", "create survey",
-    ]),
-    (IntentType.FIND_RESEARCH_GAPS, [
-        "research gap", "gap analysis", "unexplored", "future work",
-        "find gaps", "identify gaps", "research opportunity",
-        "promising direction", "open problem",
-    ]),
     (IntentType.COMPARE_PAPERS, [
         "compare", "comparison", "contrast", "difference between",
         "vs ", "versus", "benchmark", "evaluate against",
@@ -105,8 +94,6 @@ def extract_topic(query: str, intent: IntentType) -> str:
 
     # Strip common prefixes by pattern
     patterns = [
-        r"^generate\s+(?:a\s+)?literature\s+review\s+(?:on|about|for)\s+",
-        r"^(?:find|identify|discover)\s+(?:research\s+)?gaps?\s+(?:in|for|on|about)\s+",
         r"^(?:compare|contrast)\s+(?:recent\s+)?(?:papers?\s+(?:on|about|in)\s+)?",
         r"^(?:find|search\s+for|get|fetch|discover|look\s+up)\s+(?:recent\s+)?papers?\s+(?:on|about|in)\s+",
         r"^(?:summarize|summarise|generate\s+(?:a\s+)?summary\s+(?:of|for))\s+",
@@ -188,27 +175,6 @@ _WORKFLOW_TEMPLATES: dict[IntentType, dict] = {
             ("Comparison Agent", "Compare methodologies and findings"),
         ],
     },
-    IntentType.FIND_RESEARCH_GAPS: {
-        "name": "Research Gap Analysis",
-        "duration": "~5-8 minutes",
-        "steps": [
-            ("Search Agent",     "Search OpenAlex for relevant papers"),
-            ("Summary Agent",    "Summarize each paper"),
-            ("Comparison Agent", "Compare methodologies and findings"),
-            ("Gap Agent",        "Identify unexplored areas and opportunities"),
-        ],
-    },
-    IntentType.GENERATE_LITERATURE_REVIEW: {
-        "name": "Literature Review Generation",
-        "duration": "~8-12 minutes",
-        "steps": [
-            ("Search Agent",              "Search OpenAlex for relevant papers"),
-            ("Summary Agent",             "Summarize each paper"),
-            ("Comparison Agent",          "Compare methodologies and findings"),
-            ("Gap Agent",                 "Identify research gaps"),
-            ("Literature Review Agent",   "Synthesize a comprehensive academic review"),
-        ],
-    },
     IntentType.GENERAL_RAG_CHAT: {
         "name": "Research Q&A",
         "duration": "~30-60 seconds",
@@ -244,8 +210,6 @@ class CoordinatorResult:
     papers: list[dict] = field(default_factory=list)
     summaries: list[dict] = field(default_factory=list)
     comparison: str | None = None
-    gap_analysis: dict | None = None
-    literature_review: str | None = None
     chat_answer: str | None = None
     final_text: str = ""
     result_type: str = "text"     # text | papers | mixed
@@ -259,8 +223,6 @@ class CoordinatorResult:
             "papers": self.papers,
             "summaries": self.summaries,
             "comparison": self.comparison,
-            "gap_analysis": self.gap_analysis,
-            "literature_review": self.literature_review,
             "chat_answer": self.chat_answer,
             "error": self.error,
         }
@@ -332,10 +294,6 @@ class AutonomousCoordinator:
                 self._run_search_and_summarize(topic, result, plan)
             elif intent == IntentType.COMPARE_PAPERS:
                 self._run_search_summarize_compare(topic, result, plan)
-            elif intent == IntentType.FIND_RESEARCH_GAPS:
-                self._run_gap_pipeline(topic, result, plan)
-            elif intent == IntentType.GENERATE_LITERATURE_REVIEW:
-                self._run_review_pipeline(topic, result, plan)
         except Exception as exc:
             logger.exception(f"[AutoCoordinator] pipeline error: {exc}")
             result.error = str(exc)
@@ -387,36 +345,6 @@ class AutonomousCoordinator:
             return cmp.result
         except Exception as e:
             logger.warning(f"Comparison failed: {e}")
-            step.status = "failed"
-            return None
-
-    def _gap_analysis(self, topic: str, paper_ids: list[int],
-                      plan: WorkflowPlan, step_idx: int, progress: int = 75) -> dict | None:
-        step = plan.steps[step_idx]
-        step.status = "running"
-        self._update(progress, f"Identifying research gaps in '{topic}'…",
-                     plan=plan, step_index=step_idx)
-        try:
-            gap = self.coordinator.route_gap(topic, paper_ids)
-            step.status = "done"
-            return {"raw_text": gap.result, "id": gap.id}
-        except Exception as e:
-            logger.warning(f"Gap analysis failed: {e}")
-            step.status = "failed"
-            return None
-
-    def _literature_review(self, topic: str, paper_ids: list[int],
-                           plan: WorkflowPlan, step_idx: int, progress: int = 88) -> str | None:
-        step = plan.steps[step_idx]
-        step.status = "running"
-        self._update(progress, f"Writing literature review on '{topic}'…",
-                     plan=plan, step_index=step_idx)
-        try:
-            rev = self.coordinator.route_review(topic, paper_ids)
-            step.status = "done"
-            return rev.result
-        except Exception as e:
-            logger.warning(f"Literature review failed: {e}")
             step.status = "failed"
             return None
 
@@ -473,35 +401,6 @@ class AutonomousCoordinator:
 
         result.result_type = "text"
         result.final_text = comparison or "Comparison could not be generated (need ≥2 papers)."
-        self._update(100, "Complete")
-
-    def _run_gap_pipeline(self, topic: str, result: CoordinatorResult, plan: WorkflowPlan):
-        papers = self._search_papers(topic, plan, 0)
-        result.papers = [self._paper_to_dict(p) for p in papers]
-        paper_ids = [p.id for p in papers]
-
-        self._summarize_papers(papers, plan, 1, base_progress=20)
-        self._compare_papers(paper_ids, topic, plan, 2, progress=55)
-        gap = self._gap_analysis(topic, paper_ids, plan, 3, progress=72)
-        result.gap_analysis = gap
-
-        result.result_type = "text"
-        result.final_text = (gap or {}).get("raw_text", "Gap analysis could not be generated.")
-        self._update(100, "Complete")
-
-    def _run_review_pipeline(self, topic: str, result: CoordinatorResult, plan: WorkflowPlan):
-        papers = self._search_papers(topic, plan, 0)
-        result.papers = [self._paper_to_dict(p) for p in papers]
-        paper_ids = [p.id for p in papers]
-
-        self._summarize_papers(papers, plan, 1, base_progress=15)
-        self._compare_papers(paper_ids, topic, plan, 2, progress=45)
-        self._gap_analysis(topic, paper_ids, plan, 3, progress=65)
-        review = self._literature_review(topic, paper_ids, plan, 4, progress=82)
-        result.literature_review = review
-
-        result.result_type = "text"
-        result.final_text = review or "Literature review could not be generated."
         self._update(100, "Complete")
 
     # ── formatting helpers ────────────────────────────────────────────────────

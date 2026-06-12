@@ -97,10 +97,3 @@ export function streamComparison(paperIds, callbacks) {
   return createStream('/agent/compare/stream', { paper_ids: paperIds }, callbacks);
 }
 
-export function streamGap(paperIds, topic, callbacks) {
-  return createStream('/agent/gap/stream', { topic, paper_ids: paperIds }, callbacks);
-}
-
-export function streamReview(paperIds, topic, callbacks) {
-  return createStream('/agent/review/stream', { topic, paper_ids: paperIds }, callbacks);
-}

@@ -5,8 +5,6 @@ import { useAgent } from '../../contexts/AgentContext';
 const TASK_LABELS = {
   summary: ['Loading paper data…', 'Retrieving document chunks…', 'Analyzing content…', 'Generating summary…', 'Finalizing…'],
   comparison: ['Loading selected papers…', 'Extracting paper metadata…', 'Identifying key dimensions…', 'Comparing methodologies…', 'Finalizing comparison…'],
-  gap: ['Loading papers for gap analysis…', 'Analyzing research landscape…', 'Identifying contradictions…', 'Discovering opportunities…', 'Finalizing gaps…'],
-  review: ['Loading papers for review…', 'Synthesizing literature…', 'Structuring review sections…', 'Writing academic review…', 'Finalizing review…'],
 };
 
 function formatElapsed(ms) {
@@ -98,7 +96,7 @@ export default function TaskProgress({ taskId, taskType, onComplete, onError }) 
               ))}
             </div>
             <span className="text-sm font-semibold agent-gradient-text capitalize">
-              {agentType === 'review' ? 'Literature Review' : `${agentType} Agent`}
+              {`${agentType} Agent`}
             </span>
           </div>
           <div className="flex items-center gap-3 text-xs text-[var(--text-secondary)]">

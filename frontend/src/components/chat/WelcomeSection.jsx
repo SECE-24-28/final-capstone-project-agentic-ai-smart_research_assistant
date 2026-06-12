@@ -15,12 +15,7 @@ export default function WelcomeSection({ onSuggestionClick }) {
       case 'comparison': return (
         <>Compare <span className="agent-gradient-text">Methodologies and Findings</span></>
       );
-      case 'gap': return (
-        <>Discover Unexplored <span className="agent-gradient-text">Research Opportunities</span></>
-      );
-      case 'review': return (
-        <>Generate Academic <span className="agent-gradient-text">Literature Reviews</span></>
-      );
+
       default: return (
         <>How can I help with your <span className="agent-gradient-text">Research</span> today?</>
       );
@@ -44,16 +39,7 @@ export default function WelcomeSection({ onSuggestionClick }) {
         "Compare methodologies",
         "Compare results"
       ];
-      case 'gap': return [
-        "Find research gaps",
-        "Discover future work",
-        "Identify unexplored areas"
-      ];
-      case 'review': return [
-        "Generate literature review",
-        "Create survey paper",
-        "Review existing research"
-      ];
+
       default: return [
         "Help me brainstorm a topic",
         "Explain federated learning",

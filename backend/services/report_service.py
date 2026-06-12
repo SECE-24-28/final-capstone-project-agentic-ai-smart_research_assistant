@@ -1,24 +1,17 @@
 from sqlalchemy.orm import Session
-from ..models import Paper, Summary, Comparison, GapAnalysis, LiteratureReview, FinalReport
+from ..models import Paper, Summary, Comparison, FinalReport
 
 class ReportService:
     def __init__(self, session: Session):
         self.session = session
 
-    def generate_final_report(self, topic: str, paper_ids: list[int], comparison_id: int | None, gap_id: int | None, lit_review_id: int) -> FinalReport:
+    def generate_final_report(self, topic: str, paper_ids: list[int], comparison_id: int | None) -> FinalReport:
         papers = self.session.query(Paper).filter(Paper.id.in_(paper_ids)).all()
         
         comparison = None
         if comparison_id:
             comparison = self.session.query(Comparison).filter(Comparison.id == comparison_id).first()
             
-        gap_analysis = None
-        if gap_id:
-            gap_analysis = self.session.query(GapAnalysis).filter(GapAnalysis.id == gap_id).first()
-            
-        lit_review = self.session.query(LiteratureReview).filter(LiteratureReview.id == lit_review_id).first()
-        if not lit_review:
-            raise ValueError("Literature Review not found")
 
         report_content = [
             f"# Complete Research Report: {topic}\n",
@@ -45,13 +38,6 @@ class ReportService:
             report_content.append(comparison.result)
             report_content.append("\n---\n")
 
-        if gap_analysis:
-            report_content.append("## 3. Gap Analysis\n")
-            report_content.append(gap_analysis.result)
-            report_content.append("\n---\n")
-
-        report_content.append("## 4. Full Literature Review\n")
-        report_content.append(lit_review.result)
 
         final_content = "\n".join(report_content)
 

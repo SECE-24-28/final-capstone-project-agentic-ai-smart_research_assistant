@@ -11,8 +11,7 @@ export default function ChatInput({ onSend, onStop, isStreaming = false }) {
       case 'search': return "Search for research papers...";
       case 'summary': return "Summarize selected papers...";
       case 'comparison': return "Compare research papers...";
-      case 'gap': return "Find research gaps...";
-      case 'review': return "Generate literature review...";
+
       default: return "Message Smart Research Assistant...";
     }
   };

@@ -24,21 +24,6 @@ export async function getCompareResult(taskId) {
   return data;
 }
 
-/**
- * Get the result of a completed gap analysis task
- */
-export async function getGapResult(taskId) {
-  const { data } = await api.get(`/agent/gap/result/${taskId}`);
-  return data;
-}
-
-/**
- * Get the result of a completed literature review task
- */
-export async function getReviewResult(taskId) {
-  const { data } = await api.get(`/agent/review/result/${taskId}`);
-  return data;
-}
 
 /**
  * Poll a task until it completes, calling onProgress on each update.

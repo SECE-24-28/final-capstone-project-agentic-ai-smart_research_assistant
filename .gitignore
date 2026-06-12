@@ -26,3 +26,5 @@ validation.py
 
 # PDFs
 *.pdf
+
+archive/

@@ -10,8 +10,7 @@ export default function AIThinking({ message }) {
       case 'search': return "Searching papers...";
       case 'summary': return "Generating summary...";
       case 'comparison': return "Comparing methodologies...";
-      case 'gap': return "Finding research gaps...";
-      case 'review': return "Writing literature review...";
+
       default: return "AI is thinking...";
     }
   };

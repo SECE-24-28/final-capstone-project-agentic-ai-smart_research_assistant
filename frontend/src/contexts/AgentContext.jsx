@@ -11,10 +11,8 @@ export const AGENTS = [
     description: 'AI automatically plans and executes the full research workflow',
     placeholder: 'Ask anything about a research topic…',
     examples: [
-      'Find research gaps in Healthcare AI',
-      'Generate a literature review on Federated Learning',
       'Compare recent Edge AI papers',
-      'Find promising research directions in Cyber Security',
+      'What are the key methodologies in Healthcare AI?',
     ],
   },
   {
@@ -60,28 +58,6 @@ export const AGENTS = [
     description: 'Compare methodologies and findings across papers',
     placeholder: 'Select 2+ papers and ask to compare…',
     examples: ['Compare the methodologies', 'Which paper has better results?'],
-  },
-  {
-    id: 'gap',
-    name: 'Gap Analysis Agent',
-    shortName: 'Gap',
-    icon: 'Crosshair',
-    color: '#7C3AED',
-    secondaryColor: '#C084FC',
-    description: 'Identify unexplored areas and research opportunities',
-    placeholder: 'Select papers and describe the research domain…',
-    examples: ['Find research gaps in Federated Learning Security'],
-  },
-  {
-    id: 'review',
-    name: 'Literature Review Agent',
-    shortName: 'Review',
-    icon: 'BookOpen',
-    color: '#1E3A8A',
-    secondaryColor: '#60A5FA',
-    description: 'Generate a comprehensive academic literature review',
-    placeholder: 'Select papers and enter the review topic…',
-    examples: ['Generate a literature review on Healthcare AI'],
   },
 ];
 

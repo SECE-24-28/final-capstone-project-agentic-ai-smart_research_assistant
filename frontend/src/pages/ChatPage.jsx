@@ -13,13 +13,12 @@ import { usePaper } from '../contexts/PaperContext';
 import { searchApi } from '../services/searchApi';
 import { summaryApi } from '../services/summaryApi';
 import { comparisonApi } from '../services/comparisonApi';
-import { gapApi } from '../services/gapApi';
-import { reviewApi } from '../services/reviewApi';
+
 import { chatApi } from '../services/chatApi';
 import { citationApi } from '../services/citationApi';
 import { streamChat } from '../services/streamApi';
 import api from '../services/api';
-import { getSummaryResult, getCompareResult, getGapResult, getReviewResult } from '../services/taskApi';
+import { getSummaryResult, getCompareResult } from '../services/taskApi';
 import { startAutoResearch, getAutoResult } from '../services/autoApi';
 
 export default function ChatPage() {
@@ -201,33 +200,7 @@ export default function ChatPage() {
           return;
         }
 
-        // ── Gap Analysis: task-tracked ──
-        case 'gap': {
-          if (selectedPaperIds.length === 0) {
-            assistantMsg.content = "⚠️ Please select at least one paper to analyze for research gaps.";
-            setMessages([...newMessages, assistantMsg]);
-            setIsLoading(false);
-            return;
-          }
-          setIsLoading(false);
-          const gapRes = await api.post('/agent/gap', { topic: text || 'Research Analysis', paper_ids: selectedPaperIds });
-          setActiveTask({ taskId: gapRes.data.task_id, taskType: 'gap', pendingMessages: newMessages });
-          return;
-        }
 
-        // ── Literature Review: task-tracked ──
-        case 'review': {
-          if (selectedPaperIds.length === 0) {
-            assistantMsg.content = "⚠️ Please select at least one paper to generate a literature review.";
-            setMessages([...newMessages, assistantMsg]);
-            setIsLoading(false);
-            return;
-          }
-          setIsLoading(false);
-          const revRes = await api.post('/agent/review', { topic: text || 'Research Analysis', paper_ids: selectedPaperIds });
-          setActiveTask({ taskId: revRes.data.task_id, taskType: 'review', pendingMessages: newMessages });
-          return;
-        }
 
         // ── Chat: streaming ──
         case 'chat':
@@ -275,12 +248,6 @@ export default function ChatPage() {
       } else if (taskType === 'comparison') {
         result = await getCompareResult(taskId);
         assistantContent = result.result || 'Comparison complete.';
-      } else if (taskType === 'gap') {
-        result = await getGapResult(taskId);
-        assistantContent = result.raw_text || 'Gap analysis complete.';
-      } else if (taskType === 'review') {
-        result = await getReviewResult(taskId);
-        assistantContent = result.review_text || 'Literature review complete.';
       }
 
       setMessages([...pendingMessages, { role: 'assistant', content: assistantContent }]);
@@ -382,7 +349,7 @@ export default function ChatPage() {
                         // Render skeleton steps while waiting for first poll
                         Array.from({ length: autoTask.estimatedSteps }, (_, i) => ({
                           step_number: i + 1,
-                          agent_name: ['Search Agent', 'Summary Agent', 'Comparison Agent', 'Gap Agent', 'Literature Review Agent'][i] || `Step ${i+1}`,
+                          agent_name: ['Search Agent', 'Summary Agent', 'Comparison Agent'][i] || `Step ${i+1}`,
                           description: 'Waiting to start…',
                           status: i === 0 ? 'running' : 'pending',
                         }))

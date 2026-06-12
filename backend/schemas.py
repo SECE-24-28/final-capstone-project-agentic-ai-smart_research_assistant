@@ -61,30 +61,6 @@ class UploadResponse(BaseModel):
     file_path: str
     message: str
 
-class GapAnalysisRequest(BaseModel):
-    topic: str
-    paper_ids: List[int]
-
-class GapAnalysisResponse(BaseModel):
-    id: int
-    paper_ids: str
-    unexplored_areas: Optional[str] = None
-    contradictions: Optional[str] = None
-    opportunities: Optional[str] = None
-    raw_text: str
-
-    model_config = ConfigDict(from_attributes=True)
-
-class LiteratureReviewRequest(BaseModel):
-    topic: str
-    paper_ids: List[int]
-
-class LiteratureReviewResponse(BaseModel):
-    id: int
-    paper_ids: str
-    review_text: str
-
-    model_config = ConfigDict(from_attributes=True)
 
 class FinalReportResponse(BaseModel):
     id: int
@@ -147,8 +123,6 @@ class AutoResultResponse(BaseModel):
     papers: Optional[List[dict]] = None
     summaries: Optional[List[dict]] = None
     comparison: Optional[str] = None
-    gap_analysis: Optional[dict] = None
-    literature_review: Optional[str] = None
     chat_answer: Optional[str] = None
     steps: Optional[List[WorkflowStepSchema]] = None
     error: Optional[str] = None

@@ -17,7 +17,7 @@ Base = declarative_base()
 def init_db():
     from .models import (
         Paper, Summary, Comparison, Citation, ChatHistory,
-        LiteratureReview, GapAnalysis, FinalReport, CoordinatorRun,
+        FinalReport, CoordinatorRun,
     )
 
     DATABASE_FILE.parent.mkdir(parents=True, exist_ok=True)

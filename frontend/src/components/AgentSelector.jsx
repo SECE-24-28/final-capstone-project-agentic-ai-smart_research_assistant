@@ -1,10 +1,10 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAgent } from '../contexts/AgentContext';
-import { ChevronDown, Sparkles, Search, FileText, MessageSquare, GitCompare, Crosshair, BookOpen } from 'lucide-react';
+import { ChevronDown, Sparkles, Search, FileText, MessageSquare, GitCompare } from 'lucide-react';
 import { AnimatePresence, motion } from 'framer-motion';
 
 const iconMap = {
-  Sparkles, Search, FileText, MessageSquare, GitCompare, Crosshair, BookOpen
+  Sparkles, Search, FileText, MessageSquare, GitCompare
 };
 
 export default function AgentSelector() {

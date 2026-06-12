@@ -5,8 +5,6 @@ const STEP_ICONS = {
   'Search Agent':            '🔍',
   'Summary Agent':           '📄',
   'Comparison Agent':        '⚖️',
-  'Gap Agent':               '🎯',
-  'Literature Review Agent': '📚',
   'Chat Agent':              '💬',
 };
 
@@ -14,8 +12,6 @@ const WORKFLOW_DESCRIPTIONS = {
   'Paper Discovery':              'Searching for relevant papers on your topic.',
   'Paper Summarization':          'Searching and summarizing key findings.',
   'Comparative Analysis':         'Comparing methodologies across papers.',
-  'Research Gap Analysis':        'Identifying unexplored research areas.',
-  'Literature Review Generation': 'Creating a comprehensive academic review.',
   'Research Q&A':                 'Answering from your paper context.',
 };
 
