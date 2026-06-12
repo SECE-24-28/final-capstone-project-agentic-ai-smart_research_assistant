@@ -85,8 +85,12 @@ class SummaryAgent:
 
     def parse_summary(self, text: str) -> dict:
         import re
+        import logging
+        logger = logging.getLogger(__name__)
+
         sections = {"Objective": "", "Methodology": "", "Findings": "", "Limitations": "", "Contributions": ""}
         current_section = None
+        found_sections = 0
         
         for line in text.split('\n'):
             line_stripped = line.strip()
@@ -98,6 +102,7 @@ class SummaryAgent:
                 header = header_match.group(1).capitalize()
                 if header in sections:
                     current_section = header
+                    found_sections += 1
                     continue
             
             if current_section:
@@ -107,6 +112,14 @@ class SummaryAgent:
         for k in sections:
             sections[k] = sections[k].strip()
             
+        logger.info(f"SummaryAgent.parse_summary: Found {found_sections} recognized sections.")
+
+        # Fallback if Ollama completely ignores markdown formatting and returns a plaintext block
+        if found_sections == 0 and text.strip():
+            logger.warning("SummaryAgent.parse_summary: Failed to parse structured markdown. Falling back to raw text.")
+            sections["Objective"] = text.strip()
+            sections["Findings"] = "(See Objective section for complete raw summary)"
+
         return sections
 
 summary_agent_class = SummaryAgent

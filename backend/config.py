@@ -15,8 +15,13 @@ class Settings(BaseSettings):
     host: str = "0.0.0.0"
     port: int = 8000
 
+    ollama_base_url: str = "http://localhost:11434"
+    ollama_model: str = "qwen2.5:1.5b"
+    
+    # Deprecated HF fallback
     llm_model_name: str = "Qwen/Qwen2.5-1.5B-Instruct"
-    embedding_model_name: str = "sentence-transformers/all-MiniLM-L6-v2"
+    
+    embedding_model_name: str = "BAAI/bge-small-en-v1.5" # Updated from MiniLM
     chroma_collection_name: str = "research_chunks"
 
     max_pdf_chunk_chars: int = 2000

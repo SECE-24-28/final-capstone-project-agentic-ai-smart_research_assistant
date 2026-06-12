@@ -34,7 +34,7 @@ def startup_event():
     is_ollama_ready, latency, msg = ollama_service.health_check()
     if is_ollama_ready:
         logger.info("LLM Provider: Ollama")
-        logger.info("Model: qwen2.5:1.5b")
+        logger.info(f"Model: {settings.ollama_model}")
         logger.info(f"Status: Connected (Latency: {latency:.3f}s)")
     else:
         logger.error(f"⚠️  Ollama server not running on localhost:11434 (Error: {msg})")

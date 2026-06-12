@@ -110,10 +110,12 @@ class PaperSearchService:
 
                     # Re-rank by cosine similarity descending
                     raw_results.sort(key=lambda r: r["similarity_score"], reverse=True)
-                    logger.info(
-                        f"Cosine re-rank complete. Top score: {raw_results[0]['similarity_score']:.4f}, "
-                        f"Bottom: {raw_results[-1]['similarity_score']:.4f}"
-                    )
+                    
+                    logger.info("--- COSINE SIMILARITY RE-RANKING RESULTS ---")
+                    for idx, rank_res in enumerate(raw_results[:5], 1):
+                        logger.info(f"Rank {idx} | Score: {rank_res['similarity_score']:.4f} | Title: {rank_res['title'][:60]}...")
+                    logger.info("---------------------------------------------")
+
                 except Exception as embed_err:
                     logger.warning(f"Cosine re-ranking failed (fallback to OpenAlex order): {embed_err}")
 

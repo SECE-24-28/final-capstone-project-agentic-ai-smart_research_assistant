@@ -91,10 +91,10 @@ Write a comprehensive, professional research report with EXACTLY these sections:
 # {topic}: A Research Report
 
 ## Abstract
-(2-3 sentence overview of the research area, its significance, and what this report covers)
+(Write a rich, multi-paragraph abstract detailing the significance of the topic, the scope of this report, and a high-level summary of the overall conclusions.)
 
 ## Research Context
-(Background, motivation, and importance of the research topic)
+(Extensive background, motivation, and importance of the research topic, explaining why this area of study matters today.)
 
 ## Selected Papers
 (Brief bibliographic overview of the papers included in this study)
@@ -106,13 +106,13 @@ Write a comprehensive, professional research report with EXACTLY these sections:
 (Synthesise the comparison data above into a coherent narrative comparing the papers)
 
 ## Key Findings
-(Bullet-point list of the most important findings across all papers)
+(A comprehensive, detailed bullet-point list of the most critical and impactful findings discovered across all selected papers. Explain *why* each finding matters.)
 
 ## Research Insights
-(Your expert synthesis of what the collected research means for the field)
+(Your expert, profound synthesis of what the collected research means for the field at large. Discuss paradigm shifts, consensus, or major disagreements between the authors.)
 
 ## Future Work
-(3-5 specific, concrete directions for future research in this area)
+(Provide 4-6 specific, concrete, and highly actionable directions for future research. What exact problems remain unsolved?)
 
 Do NOT include a References section — it will be added separately.
 Write in formal academic English. Be specific and analytical. Do not hallucinate facts."""

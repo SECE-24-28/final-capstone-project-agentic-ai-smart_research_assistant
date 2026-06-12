@@ -6,11 +6,13 @@ from typing import Generator, Dict, Any, Tuple
 
 logger = logging.getLogger(__name__)
 
+from ..config import settings
+
 class OllamaService:
-    def __init__(self, base_url: str = "http://localhost:11434"):
-        self.base_url = base_url
+    def __init__(self, base_url: str = None, model: str = None):
+        self.base_url = base_url or settings.ollama_base_url
         self.generate_url = f"{self.base_url}/api/generate"
-        self.default_model = "qwen2.5:1.5b"
+        self.default_model = model or settings.ollama_model
         self._timeout = 300.0  # 5 minutes for long generations
 
     def health_check(self) -> Tuple[bool, float, str]:

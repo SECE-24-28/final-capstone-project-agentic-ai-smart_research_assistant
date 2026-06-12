@@ -64,13 +64,20 @@ class ComparisonAgent:
         intro.append(
             "Provide a structured comparative analysis of the above papers. "
             "1. First, generate a professional markdown table summarizing the key aspects of the papers. "
-            "The table MUST have the following rows: Objective, Methodology, Dataset, Findings, Limitations, Contributions. "
-            "The columns should be 'Aspect', 'Paper A', 'Paper B', etc. (use actual paper titles or IDs for headers).\n"
+            "The table MUST be formatted exactly like this:\n"
+            "| Aspect | [Paper 1 Title] | [Paper 2 Title] |\n"
+            "|---|---|---|\n"
+            "| Objective | ... | ... |\n"
+            "| Methodology | ... | ... |\n"
+            "| Dataset | ... | ... |\n"
+            "| Results | ... | ... |\n"
+            "| Limitations | ... | ... |\n"
+            "| Contributions | ... | ... |\n\n"
             "2. After the table, you MUST include the following exact headings with your detailed analysis:\n"
-            "## Key Similarities\n"
-            "## Key Differences\n"
+            "## Similarities\n"
+            "## Differences\n"
             "## Research Trends\n"
-            "## Recommendation"
+            "## Future Research Directions"
         )
                      
         if dimension:
