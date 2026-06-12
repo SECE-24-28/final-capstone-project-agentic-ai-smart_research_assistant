@@ -34,7 +34,8 @@ export default function ChatPage() {
   const autoPollerRef = useRef(null);
 
   const { selectedAgentId } = useAgent();
-  const { selectedPaperIds, setSearchResults } = usePaper();
+  const { selectedPaperIds, setSearchResults, addSelectedPaper, removeSelectedPaper } = usePaper();
+  const [uploadedFiles, setUploadedFiles] = useState([]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -396,7 +397,43 @@ export default function ChatPage() {
 
       <div className="absolute bottom-0 left-0 right-0 p-4 bg-gradient-to-t from-[var(--bg-page)] via-[var(--bg-page)] to-transparent">
         <div className="max-w-3xl mx-auto">
-          <ChatInput onSend={handleSendMessage} onStop={handleStop} isStreaming={isStreaming || !!activeTask || !!autoTask} />
+          <ChatInput
+            onSend={handleSendMessage}
+            onStop={handleStop}
+            isStreaming={isStreaming || !!activeTask || !!autoTask}
+            onUpload={(data) => {
+              // data expected: { paper_id, file_path, message }
+              const rawPath = data.file_path || '';
+              const filename = (rawPath.replace(/\\/g, '/').split('/').pop()) || `paper-${data.paper_id}`;
+              const paper = { id: data.paper_id, title: filename, file_path: data.file_path };
+              try { addSelectedPaper(paper); } catch (e) {}
+              setUploadedFiles(prev => [...prev, paper]);
+            }}
+          />
+          {uploadedFiles.length > 0 && (
+            <div className="mt-3 flex justify-center">
+              <div className="bg-[var(--bg-card)] border border-[var(--border-color)] px-3 py-2 rounded-full flex items-center gap-3 shadow-sm">
+                {uploadedFiles.map((f) => (
+                  <div key={f.id} className="flex items-center gap-2 bg-[var(--bg-sidebar)] text-[var(--text-primary)] px-3 py-1 rounded-full">
+                    <div className="w-5 h-5 shrink-0 flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-file-text"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><path d="M14 2v6h6"></path><path d="M8 13h8"></path><path d="M8 17h8"></path></svg>
+                    </div>
+                    <div className="text-xs font-medium">{f.title}</div>
+                    <button
+                      onClick={() => {
+                        setUploadedFiles(prev => prev.filter(p => p.id !== f.id));
+                        try { removeSelectedPaper(f.id); } catch (e) {}
+                      }}
+                      className="ml-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)]"
+                      title="Remove uploaded file"
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
           <div className="text-center text-xs text-[var(--text-secondary)] mt-3">
             Smart Research Assistant can make mistakes. Consider verifying important information. Type <b>/cite</b> to generate citations.
           </div>

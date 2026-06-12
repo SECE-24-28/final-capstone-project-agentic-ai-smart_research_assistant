@@ -1,10 +1,13 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { useAgent } from '../../contexts/AgentContext';
 import { Paperclip, ArrowUp, Square } from 'lucide-react';
+import { uploadApi } from '../../services/uploadApi';
 
-export default function ChatInput({ onSend, onStop, isStreaming = false }) {
+export default function ChatInput({ onSend, onStop, isStreaming = false, onUpload }) {
   const [text, setText] = useState('');
   const { selectedAgentId } = useAgent();
+  const fileInputRef = useRef(null);
+  const [isUploading, setIsUploading] = useState(false);
 
   const getPlaceholder = () => {
     switch (selectedAgentId) {
@@ -31,10 +34,36 @@ export default function ChatInput({ onSend, onStop, isStreaming = false }) {
       >
         <button 
           type="button"
+          onClick={() => fileInputRef.current?.click()}
           className="p-3 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors"
+          title="Attach PDF"
         >
           <Paperclip className="w-5 h-5" />
         </button>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="application/pdf"
+          className="hidden"
+          onChange={async (e) => {
+            const file = e.target.files?.[0];
+            if (!file) return;
+            setIsUploading(true);
+            try {
+              const res = await uploadApi.uploadPdf(file, (evt) => {
+                // optional: could show progress using evt.loaded/evt.total
+              });
+              if (onUpload) onUpload(res.data);
+              else alert(`Uploaded ${file.name} successfully.`);
+            } catch (err) {
+              console.error('Upload failed', err);
+              alert('Upload failed. See console for details.');
+            } finally {
+              setIsUploading(false);
+              e.target.value = '';
+            }
+          }}
+        />
         
         <textarea
           value={text}
