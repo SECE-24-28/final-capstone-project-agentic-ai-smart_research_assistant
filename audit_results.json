@@ -1,0 +1,29 @@
+{
+  "database": {
+    "tables": [
+      "chat_history",
+      "citations",
+      "comparisons",
+      "coordinator_runs",
+      "final_reports",
+      "gap_analyses",
+      "literature_reviews",
+      "papers",
+      "summaries"
+    ],
+    "wal": true,
+    "schema_ok": true
+  },
+  "ollama": {
+    "ok": true,
+    "model": "qwen2.5:1.5b",
+    "msg": "Ollama running. Model 'qwen2.5:1.5b' available.",
+    "latency": 2.4519991874694824
+  },
+  "api": {
+    "search": {
+      "ok": false,
+      "error": "Client error '404 Not Found' for url 'http://localhost:8000/search/?query=Federated+Learning'\nFor more information check: https://developer.mozilla.org/en-US/docs/Web/HTTP/Status/404"
+    }
+  }
+}
