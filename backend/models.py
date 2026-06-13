@@ -88,6 +88,30 @@ class ChatHistory(Base):
     paper = relationship("Paper", back_populates="chat_history")
 
 
+class ChatSession(Base):
+    __tablename__ = "chat_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    title = Column(String(256), nullable=False, default="New Research")
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
+    messages = relationship("ChatMessage", back_populates="session", cascade="all, delete-orphan")
+
+
+class ChatMessage(Base):
+    __tablename__ = "chat_messages"
+
+    id = Column(Integer, primary_key=True, index=True)
+    session_id = Column(Integer, ForeignKey("chat_sessions.id"), nullable=False)
+    role = Column(String(64), nullable=False) # 'user' or 'assistant'
+    content = Column(Text, nullable=False)
+    agent_type = Column(String(64), nullable=True) # e.g. 'general', 'research'
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    session = relationship("ChatSession", back_populates="messages")
+
+
 class CoordinatorRun(Base):
     """Records every Auto Mode coordinator execution for audit and analytics."""
     __tablename__ = "coordinator_runs"

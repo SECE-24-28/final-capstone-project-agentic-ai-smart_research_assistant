@@ -128,3 +128,34 @@ class AutoResultResponse(BaseModel):
     chat_answer: Optional[str] = None
     steps: Optional[List[WorkflowStepSchema]] = None
     error: Optional[str] = None
+
+# ─────────────────────────────────────────────────────────────────────────────
+#  PHASE 20: CHAT HISTORY SCHEMAS
+# ─────────────────────────────────────────────────────────────────────────────
+
+class ChatMessageBase(BaseModel):
+    role: str
+    content: str
+    agent_type: Optional[str] = None
+
+class ChatMessageCreate(ChatMessageBase):
+    session_id: int
+
+class ChatMessageResponse(ChatMessageBase):
+    id: int
+    session_id: int
+    created_at: str
+
+    model_config = ConfigDict(from_attributes=True)
+
+class ChatSessionCreate(BaseModel):
+    title: Optional[str] = "New Research"
+
+class ChatSessionResponse(BaseModel):
+    id: int
+    title: str
+    created_at: str
+    updated_at: str
+    messages: Optional[List[ChatMessageResponse]] = None
+
+    model_config = ConfigDict(from_attributes=True)

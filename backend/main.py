@@ -2,7 +2,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from .config import settings
 from .database import init_db
-from .routers import search, upload, agent, report
+from .routers import search, upload, agent, report, chat
 
 app = FastAPI(title=settings.app_name)
 
@@ -18,6 +18,7 @@ app.include_router(search)
 app.include_router(upload)
 app.include_router(agent)
 app.include_router(report)
+app.include_router(chat.router, prefix="/chat", tags=["chat"])
 
 
 @app.on_event("startup")
