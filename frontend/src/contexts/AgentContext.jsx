@@ -65,6 +65,7 @@ const AgentContext = createContext();
 
 export function AgentProvider({ children }) {
   const [selectedAgentId, setSelectedAgentId] = useState('auto');
+  const [currentSessionId, setCurrentSessionId] = useState(null);
 
   useEffect(() => {
     document.body.setAttribute('data-agent', selectedAgentId);
@@ -76,7 +77,10 @@ export function AgentProvider({ children }) {
   const selectedAgent = AGENTS.find(a => a.id === selectedAgentId) || AGENTS[0];
 
   return (
-    <AgentContext.Provider value={{ selectedAgentId, setSelectedAgentId, selectedAgent, AGENTS }}>
+    <AgentContext.Provider value={{ 
+      selectedAgentId, setSelectedAgentId, selectedAgent, AGENTS,
+      currentSessionId, setCurrentSessionId
+    }}>
       {children}
     </AgentContext.Provider>
   );

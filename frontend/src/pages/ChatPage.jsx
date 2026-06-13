@@ -63,18 +63,50 @@ export default function ChatPage() {
     });
   }, []);
 
+  // ─── Phase 20: Persistent Chat History ────────────────────────────────────
+  const { currentSessionId, setCurrentSessionId } = useAgent();
+
+  const loadSessionHistory = useCallback(async (sessionId) => {
+    setIsLoading(true);
+    try {
+      const session = await chatApi.getSession(sessionId);
+      if (session && session.messages) {
+        setMessages(session.messages.map(m => ({
+          role: m.role,
+          content: m.content,
+          agent_type: m.agent_type
+        })));
+      }
+    } catch (err) {
+      console.error("Failed to load session history:", err);
+      setMessages([]);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (currentSessionId) {
+      loadSessionHistory(currentSessionId);
+    } else {
+      setMessages([]);
+    }
+  }, [currentSessionId, loadSessionHistory]);
+
+  const currentStreamTextRef = useRef("");
+
   // ─── Streaming helper ─────────────────────────────────────────────────────
-  const startStream = useCallback((streamFn, args, newMessages, thinkingMsg) => {
+  const startStream = useCallback((streamFn, args, newMessages, thinkingMsg, sessionId) => {
     setLoadingMessage(thinkingMsg);
     setIsLoading(true);
 
-    // Create a placeholder message that will be updated token-by-token
     const streamingMsgIndex = newMessages.length;
     const placeholder = { role: 'assistant', content: '', isStreaming: true };
     const withPlaceholder = [...newMessages, placeholder];
     setMessages(withPlaceholder);
     setIsLoading(false);
     setIsStreaming(true);
+    currentStreamTextRef.current = "";
 
     const startTime = Date.now();
     let firstToken = true;
@@ -86,21 +118,32 @@ export default function ChatPage() {
           console.log(`[STREAMING] First token in ${ttft}s`);
           firstToken = false;
         }
+        currentStreamTextRef.current += token;
         setMessages(prev => {
           const updated = [...prev];
           updated[streamingMsgIndex] = {
             ...updated[streamingMsgIndex],
-            content: updated[streamingMsgIndex].content + token,
+            content: currentStreamTextRef.current,
             isStreaming: true,
           };
           return updated;
         });
       },
-      onDone: () => {
+      onDone: async () => {
         const totalTime = ((Date.now() - startTime) / 1000).toFixed(2);
         console.log(`[STREAMING] Complete in ${totalTime}s`);
         setIsStreaming(false);
         abortControllerRef.current = null;
+        
+        // Save the final assistant message to the backend
+        try {
+          if (sessionId) {
+            await chatApi.createMessage(sessionId, 'assistant', currentStreamTextRef.current, selectedAgentId);
+          }
+        } catch (err) {
+          console.error("Failed to save assistant message:", err);
+        }
+
         setMessages(prev => {
           const updated = [...prev];
           updated[streamingMsgIndex] = { ...updated[streamingMsgIndex], isStreaming: false };
@@ -124,11 +167,34 @@ export default function ChatPage() {
     });
 
     abortControllerRef.current = controller;
-  }, []);
+  }, [selectedAgentId]);
 
   // ─── Main send handler ────────────────────────────────────────────────────
   const handleSendMessage = async (text) => {
     if (isStreaming) return;
+
+    let activeSessionId = currentSessionId;
+    
+    // Create new session if none exists
+    if (!activeSessionId) {
+      try {
+        const titleWords = text.split(" ").slice(0, 5).join(" ");
+        const newTitle = titleWords + (text.split(" ").length > 5 ? "..." : "");
+        const session = await chatApi.createSession(newTitle);
+        activeSessionId = session.id;
+        setCurrentSessionId(activeSessionId);
+      } catch (err) {
+        console.error("Failed to create session:", err);
+        return; // Halt if DB fails
+      }
+    }
+
+    // Save user message
+    try {
+      await chatApi.createMessage(activeSessionId, 'user', text, selectedAgentId);
+    } catch (err) {
+      console.error("Failed to save user message:", err);
+    }
 
     const newMessages = [...messages, { role: 'user', content: text }];
     setMessages(newMessages);
@@ -146,12 +212,9 @@ export default function ChatPage() {
           const apa = await citationApi.generateCitation(selectedPaperIds[0], 'apa');
           const ieee = await citationApi.generateCitation(selectedPaperIds[0], 'ieee');
           const mla = await citationApi.generateCitation(selectedPaperIds[0], 'mla');
-          assistantMsg.content = "Here are the formatted citations for your selected paper:";
-          assistantMsg.citations = [
-            { format: 'APA', text: apa.citation_text },
-            { format: 'IEEE', text: ieee.citation_text },
-            { format: 'MLA', text: mla.citation_text },
-          ];
+          assistantMsg.content = "Here are the formatted citations for your selected paper:\n\n**APA**: " + apa.citation_text + "\n\n**IEEE**: " + ieee.citation_text + "\n\n**MLA**: " + mla.citation_text;
+          
+          await chatApi.createMessage(activeSessionId, 'assistant', assistantMsg.content, 'citation');
         }
         setMessages([...newMessages, assistantMsg]);
         setIsLoading(false);
@@ -162,10 +225,11 @@ export default function ChatPage() {
       if (selectedAgentId === 'search' || selectedAgentId === 'auto' && selectedPaperIds.length === 0) {
         setLoadingMessage("Searching research papers...");
         const searchData = await searchApi.searchPapers(text, 5);
-        assistantMsg.content = `I found some relevant papers for **"${text}"**. Select the ones you want to analyze:`;
+        assistantMsg.content = `I found some relevant papers for **"${text}"**. Select the ones you want to analyze:\n\n` + searchData.map(p => `- ${p.title}`).join('\n');
         assistantMsg.papers = searchData;
         setSearchResults(searchData);
         setMessages([...newMessages, assistantMsg]);
+        await chatApi.createMessage(activeSessionId, 'assistant', assistantMsg.content, 'search');
         setIsLoading(false);
         return;
       }
@@ -178,12 +242,13 @@ export default function ChatPage() {
           if (selectedPaperIds.length === 0) {
             assistantMsg.content = "⚠️ Please select at least one paper from the search results to summarize.";
             setMessages([...newMessages, assistantMsg]);
+            await chatApi.createMessage(activeSessionId, 'assistant', assistantMsg.content, 'summary');
             setIsLoading(false);
             return;
           }
           setIsLoading(false);
           const sumRes = await api.post(`/agent/summary?paper_id=${selectedPaperIds[0]}`);
-          setActiveTask({ taskId: sumRes.data.task_id, taskType: 'summary', pendingMessages: newMessages });
+          setActiveTask({ taskId: sumRes.data.task_id, taskType: 'summary', pendingMessages: newMessages, sessionId: activeSessionId });
           return;
         }
 
@@ -192,16 +257,15 @@ export default function ChatPage() {
           if (selectedPaperIds.length < 2) {
             assistantMsg.content = "⚠️ Please select at least two papers to run a comparative analysis.";
             setMessages([...newMessages, assistantMsg]);
+            await chatApi.createMessage(activeSessionId, 'assistant', assistantMsg.content, 'comparison');
             setIsLoading(false);
             return;
           }
           setIsLoading(false);
           const cmpRes = await api.post('/agent/compare', { paper_ids: selectedPaperIds });
-          setActiveTask({ taskId: cmpRes.data.task_id, taskType: 'comparison', pendingMessages: newMessages });
+          setActiveTask({ taskId: cmpRes.data.task_id, taskType: 'comparison', pendingMessages: newMessages, sessionId: activeSessionId });
           return;
         }
-
-
 
         // ── Chat: streaming ──
         case 'chat':
@@ -211,7 +275,8 @@ export default function ChatPage() {
             streamChat,
             [text, selectedPaperIds.length > 0 ? selectedPaperIds : null],
             newMessages,
-            "Analyzing research context..."
+            "Analyzing research context...",
+            activeSessionId
           );
           return;
       }
@@ -223,6 +288,7 @@ export default function ChatPage() {
         errorMsg += `\n\n**Details:** ${error.response.data.detail}`;
       }
       setMessages([...newMessages, { role: 'assistant', content: errorMsg }]);
+      await chatApi.createMessage(activeSessionId, 'assistant', errorMsg, selectedAgentId);
       setIsLoading(false);
     }
   };
@@ -230,7 +296,7 @@ export default function ChatPage() {
   // ── Handle task completion ─────────────────────────────────────────────────
   const handleTaskComplete = useCallback(async (taskStatus) => {
     if (!activeTask) return;
-    const { taskId, taskType, pendingMessages } = activeTask;
+    const { taskId, taskType, pendingMessages, sessionId } = activeTask;
     setActiveTask(null);
 
     try {
@@ -252,6 +318,9 @@ export default function ChatPage() {
       }
 
       setMessages([...pendingMessages, { role: 'assistant', content: assistantContent }]);
+      if (sessionId) {
+        await chatApi.createMessage(sessionId, 'assistant', assistantContent, taskType);
+      }
     } catch (err) {
       setMessages([...pendingMessages, { role: 'assistant', content: `❌ Failed to retrieve result: ${err.message}` }]);
     }
@@ -289,20 +358,28 @@ export default function ChatPage() {
             setAutoWorkflowSteps([]);
 
             // Render result based on result_type
+            let autoContent = '';
+            let papersResult = null;
             if (fullResult.result_type === 'papers' && fullResult.papers?.length > 0) {
+              autoContent = `I found **${fullResult.papers.length} papers** on *${fullResult.topic}*. Select papers to analyze further.`;
+              papersResult = fullResult.papers;
               setMessages([
                 ...pendingMessages,
                 {
                   role: 'assistant',
-                  content: `I found **${fullResult.papers.length} papers** on *${fullResult.topic}*. Select papers to analyze further.`,
-                  papers: fullResult.papers,
+                  content: autoContent,
+                  papers: papersResult,
                 }
               ]);
             } else {
+              autoContent = fullResult.final_text || 'Research complete.';
               setMessages([
                 ...pendingMessages,
-                { role: 'assistant', content: fullResult.final_text || 'Research complete.' }
+                { role: 'assistant', content: autoContent }
               ]);
+            }
+            if (currentSessionId) {
+              await chatApi.createMessage(currentSessionId, 'assistant', autoContent, 'auto');
             }
           } catch (err) {
             setAutoTask(null);

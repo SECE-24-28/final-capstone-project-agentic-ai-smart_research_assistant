@@ -1,20 +1,48 @@
+import { useState, useEffect } from 'react';
 import { NavLink } from 'react-router-dom';
-import { MessageSquare, Library, FileText, Mail, Settings, Plus, Beaker } from 'lucide-react';
+import { MessageSquare, Library, FileText, Mail, Settings, Plus, Beaker, Trash2 } from 'lucide-react';
 import { clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
+import { chatApi } from '../../services/chatApi';
+import { useAgent } from '../../contexts/AgentContext';
 
 function cn(...inputs) {
   return twMerge(clsx(inputs));
 }
 
 export default function Sidebar() {
-  const recentChats = [
-    "Federated Learning Security",
-    "Healthcare AI",
-    "Edge AI",
-    "Cyber Security",
-    "Machine Learning"
-  ];
+  const [sessions, setSessions] = useState([]);
+  const { currentSessionId, setCurrentSessionId } = useAgent();
+
+  const loadSessions = async () => {
+    try {
+      const data = await chatApi.getSessions();
+      setSessions(data);
+    } catch (err) {
+      console.error('Failed to load chat sessions:', err);
+    }
+  };
+
+  useEffect(() => {
+    loadSessions();
+  }, [currentSessionId]); // Reload sessions when current session changes (to get updated titles)
+
+  const handleNewResearch = () => {
+    setCurrentSessionId(null);
+  };
+
+  const handleDeleteSession = async (e, sessionId) => {
+    e.stopPropagation();
+    try {
+      await chatApi.deleteSession(sessionId);
+      if (currentSessionId === sessionId) {
+        setCurrentSessionId(null);
+      }
+      loadSessions();
+    } catch (err) {
+      console.error('Failed to delete session:', err);
+    }
+  };
 
   return (
     <div className="w-64 bg-[var(--bg-sidebar)] border-r border-[var(--border-color)] flex flex-col h-full shrink-0 transition-colors duration-200 relative overflow-hidden z-20">
@@ -34,7 +62,9 @@ export default function Sidebar() {
 
       {/* New Research Button */}
       <div className="p-4 relative z-10">
-        <button className="w-full flex items-center gap-2 px-4 py-2 bg-[var(--bg-card)] hover:bg-[var(--border-color)] border border-[var(--border-color)] rounded-lg text-sm font-medium transition-colors">
+        <button 
+          onClick={handleNewResearch}
+          className="w-full flex items-center gap-2 px-4 py-2 bg-[var(--bg-card)] hover:bg-[var(--border-color)] border border-[var(--border-color)] rounded-lg text-sm font-medium transition-colors">
           <Plus className="w-4 h-4" />
           New Research
         </button>
@@ -48,27 +78,39 @@ export default function Sidebar() {
         {/* <NavItem to="/email" icon={Mail} label="Email" /> */}
       </div>
 
-      {/* Recent Chats (Mock) */}
+      {/* Recent Chats */}
       <div className="flex-1 overflow-y-auto mt-6 px-3 relative z-10">
-        <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2 px-3">
+        <h3 className="text-xs font-semibold text-[var(--text-secondary)] uppercase tracking-wider mb-2 px-3 flex justify-between items-center">
           Recent Chats
         </h3>
         <div className="space-y-1">
-          {recentChats.map((chat, i) => {
-            const isActive = i === 0; // Mock active state for the first item
+          {sessions.map((session) => {
+            const isActive = currentSessionId === session.id;
             return (
               <div 
-                key={i} 
-                className={`px-3 py-2 text-sm rounded-lg cursor-pointer truncate transition-all duration-200 border-l-2
+                key={session.id}
+                onClick={() => setCurrentSessionId(session.id)}
+                className={`px-3 py-2 flex items-center justify-between text-sm rounded-lg cursor-pointer transition-all duration-200 border-l-2 group
                   ${isActive 
-                    ? 'agent-left-border font-medium text-[var(--agent-primary)]' 
+                    ? 'agent-left-border font-medium text-[var(--agent-primary)] bg-[var(--bg-card)] shadow-sm' 
                     : 'border-transparent text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--bg-card)] hover:border-[var(--border-color)]'}`}
                 style={isActive ? { backgroundColor: 'color-mix(in srgb, var(--agent-primary) 8%, transparent)' } : {}}
               >
-                {chat}
+                <span className="truncate pr-2">{session.title}</span>
+                <button 
+                  onClick={(e) => handleDeleteSession(e, session.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity p-1 hover:text-red-500 rounded"
+                >
+                  <Trash2 className="w-3 h-3" />
+                </button>
               </div>
             );
           })}
+          {sessions.length === 0 && (
+            <div className="px-3 py-2 text-xs text-[var(--text-secondary)] italic">
+              No recent chats
+            </div>
+          )}
         </div>
       </div>
 
